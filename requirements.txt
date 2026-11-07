@@ -1,0 +1,6 @@
+# CPU build of PyTorch:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.15
+numpy
+tokenizers
+matplotlib

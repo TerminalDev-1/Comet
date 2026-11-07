@@ -259,9 +259,11 @@ VTransformer/
 ## Phases
 
 ### Phase 0: Setup
-- Install PyTorch (CPU build), plus `tokenizers`, `numpy`, `matplotlib`.
-- Check BF16 on this CPU; benchmark matrix multiply at various sizes (also tells us good EMOE expert sizes).
-- Try `torch-directml` on the Radeon 760M; keep it only if it beats the CPU.
+- ✅ Install PyTorch 2.15 (CPU build), plus `tokenizers`, `numpy`, `matplotlib`, in `.venv`.
+- ✅ BF16 works: ~0.75–0.85 TFLOPS, ~2.3× faster than FP32. 4–6 threads get ~93% of 12-thread speed.
+- ✅ EMOE expert hidden size: 128 minimum, 256+ near full speed.
+- ⏳ `torch-directml` on the Radeon 760M: blocked, because it has no Python 3.13 build (needs 3.12). Keep it only if it beats the CPU.
+- Results: `results/hardware.md`.
 
 ### Phase 1: Data
 - Download TinyStories, run dedup + quality filters, train an 8k BPE tokenizer, write `train.bin` / `val.bin`.
