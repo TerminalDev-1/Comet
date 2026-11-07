@@ -83,8 +83,14 @@ A separate review of a copy of this repo flagged these. My take and the fix for 
 - Plain attention builds a full T×T score table, so at contexts of 2,048+ it gets slow and memory-hungry; fused attention would be much faster there.
 - **Fix:** make the defaults **`auto`**: pick fused attention on GPUs or for contexts ≥1,024, plain math on CPU at short contexts; RMSNorm on GPU, LayerNorm on CPU. Optionally run a quick startup benchmark to choose. Document this as "Comet adapts its kernels to the hardware" rather than one fixed choice.
 
-### 8. Multi-token prediction "capacity deficit" — ❓ cut off in the screenshot
-- Paste the rest of the review tomorrow. Likely point: a ~6.5M model is too small to benefit from predicting further ahead, which matches results/mtp.md.
+### 8. Multi-token prediction "capacity deficit" — ✅ valid (matches results/mtp.md)
+- DeepSeek-V3 showed MTP helps at 671B parameters. At ~6.5M, making the same hidden states also predict token t+2 acts as a harmful extra constraint: val loss 3.17 vs 3.115 for dense.
+- **Action:** keep MTP off for small models; only retest it if Comet scales up a lot (it may also help later for faster generation via speculative decoding).
+
+### 9. Novelty: every part of the 2.5× win was invented elsewhere — ✅ factually right, framing noted
+- RoPE, QK-Norm, SwiGLU, GQA, Muon and WSD are all published work, and Comet's own additions (EMOE shared pool, MoD, light MTP) haven't beaten the dense core within 10–15 minutes yet.
+- **Our stance on the name:** Comet is an architecture in the same sense Llama is (Llama also combined published parts: RMSNorm, SwiGLU, RoPE). The paper credits every source and presents EMOE as Comet's own addition, with honest results.
+- **Review's verdict for making it clearly original:** make the **shared EMOE pool** or **looped-block parameter sharing** win at **equal parameter or memory budgets**. That's the same as tomorrow's options 1 and 3, which confirms the order.
 
 ## How to resume
 
