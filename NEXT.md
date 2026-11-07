@@ -70,7 +70,21 @@ A separate review of a copy of this repo flagged these. My take and the fix for 
 ### 4. EMOE's single shared pool may strain representations — ⚠️ a hypothesis to test
 - **Claim:** early layers (low-level token patterns) and late layers (meaning, story structure) may not be able to reuse the same experts well. One shared pool could force a compromise.
 - **This is exactly what tomorrow's option 1 tests:** shared pool vs. per-layer pools at **equal memory**. If the shared pool loses, a middle option is **group-shared pools** (layers 0–2 share one pool, layers 3–5 share another).
-- The review's text was cut off in the screenshot after this point; paste the rest tomorrow if it has more items.
+### 5. EMOE experts are starved of data at this scale — ✅ valid (matches results/emoe.md)
+- At 1–3M training tokens, each of 64–128 experts sees only a small slice, so they stay under-trained. MoE normally needs tens of millions of tokens or more.
+- **Implication for tomorrow's test:** compare at equal memory *and* try fewer, larger experts (e.g. 16–32) so each one gets more data within 12 minutes.
+
+### 6. Muon on stacked expert weights is ~10× slower — ✅ valid, already worked around
+- Muon's optimizer step on the expert pool took **385 ms vs 38 ms** with AdamW (that's why `--expert_optim adamw` exists). Muon's cost grows with parameter count, and experts are most of the parameters.
+- **Open idea:** keep Muon's quality for experts at lower cost: fewer Newton-Schulz steps (3 instead of 5), or orthogonalize the expert weights only every few steps.
+
+### 7. CPU-tuned defaults are wrong for GPUs and long contexts — ✅ valid, matters for the package (Phase 11)
+- Comet's defaults (plain attention math, LayerNorm) were measured fastest **on this Ryzen at context 256**. On GPUs, fused attention (SDPA / FlashAttention) and RMSNorm are the faster choices.
+- Plain attention builds a full T×T score table, so at contexts of 2,048+ it gets slow and memory-hungry; fused attention would be much faster there.
+- **Fix:** make the defaults **`auto`**: pick fused attention on GPUs or for contexts ≥1,024, plain math on CPU at short contexts; RMSNorm on GPU, LayerNorm on CPU. Optionally run a quick startup benchmark to choose. Document this as "Comet adapts its kernels to the hardware" rather than one fixed choice.
+
+### 8. Multi-token prediction "capacity deficit" — ❓ cut off in the screenshot
+- Paste the rest of the review tomorrow. Likely point: a ~6.5M model is too small to benefit from predicting further ahead, which matches results/mtp.md.
 
 ## How to resume
 
