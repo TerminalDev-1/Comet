@@ -40,6 +40,11 @@ class CometConfig:
     shared_hidden: int = 192  # always-on shared expert per layer (0 = off)
     balance_rate: float = 1e-3  # how fast router biases rebalance expert load
     capacity: float = 1.25  # expert slot size as a multiple of average load
+    # Multi-token prediction (training only). 0 = off.
+    mtp_depth: int = 0  # extra tokens ahead to predict (1 = also predict token t+2)
+    mtp_weight: float = 0.3  # weight of the MTP loss
+    mtp_frac: float = 0.5  # fraction of positions scored by the MTP head
+    mtp_block: bool = True  # extra transformer block per MTP depth (False = light, cheaper)
 
 
 class MLP(nn.Module):
@@ -74,11 +79,32 @@ class Block(nn.Module):
         return x + self.mlp(self.n2(x))
 
 
+class MTPModule(nn.Module):
+    """Multi-token prediction, one extra depth (DeepSeek-V3 style).
+
+    At position t it combines the previous depth's hidden state with the embedding of
+    token t+j, runs one small transformer block, and predicts token t+j+1 with the
+    shared (tied) output layer. Training only; generation ignores it.
+    """
+
+    def __init__(self, cfg):
+        super().__init__()
+        self.nh, self.ne = Norm(cfg.d, cfg.norm), Norm(cfg.d, cfg.norm)
+        self.proj_in = nn.Linear(2 * cfg.d, cfg.d, bias=False)
+        self.block = Block(cfg) if cfg.mtp_block else None  # light version: no extra block
+
+    def forward(self, h, next_emb):
+        z = self.proj_in(torch.cat([self.nh(h), self.ne(next_emb)], dim=-1))
+        return self.block(z) if self.block is not None else z
+
+
 class Comet(nn.Module):
     def __init__(self, cfg: CometConfig):
         super().__init__()
         self.cfg = cfg
         self.tok = nn.Embedding(cfg.vocab, cfg.d)
+        self.mtp = nn.ModuleList(MTPModule(cfg) for _ in range(cfg.mtp_depth))
+        self.last_main_loss = None
         if cfg.emoe:
             self.pool, out_std = make_pool(cfg)  # stored once, used by every layer
             self.blocks = nn.ModuleList(Block(cfg, self.pool, out_std) for _ in range(cfg.layers))
@@ -101,7 +127,28 @@ class Comet(nn.Module):
         if targets is None:
             return logits
         loss = F.cross_entropy(logits.float().reshape(-1, logits.size(-1)), targets.reshape(-1))
+        self.last_main_loss = loss.detach()
+        if self.training and self.mtp:
+            loss = loss + self.cfg.mtp_weight * self._mtp_loss(x, targets)
         return logits, loss
+
+    def _mtp_loss(self, h, targets):
+        """Extra losses for tokens 2..(1+mtp_depth) ahead, on a random sample of positions."""
+        T = targets.shape[1]
+        losses = []
+        for j, mod in enumerate(self.mtp, start=1):
+            # position t: hidden of depth j-1 + embedding of token t+j (= targets[:, t+j-1]) -> predict targets[:, t+j]
+            h = mod(h[:, :T - j], self.tok(targets[:, j - 1:T - 1]))
+            tgt = targets[:, j:]
+            hs = self.norm(h).reshape(-1, h.shape[-1])
+            tg = tgt.reshape(-1)
+            if self.cfg.mtp_frac < 1.0:  # score only a sample of positions (output layer is costly)
+                n = max(1, int(hs.shape[0] * self.cfg.mtp_frac))
+                sel = torch.randperm(hs.shape[0], device=hs.device)[:n]
+                hs, tg = hs[sel], tg[sel]
+            lg = hs @ self.tok.weight.T
+            losses.append(F.cross_entropy(lg.float(), tg))
+        return torch.stack(losses).mean()
 
     def param_counts(self):
         total = sum(p.numel() for p in self.parameters())
