@@ -130,6 +130,59 @@ Target: **roughly half the memory per parameter** of the baseline setup, before 
 
 ---
 
+## Pillar 5: Less compute per token
+
+### 5a. Adaptive loop depth
+- Each token gets a small **halting score** after each pass through the looped blocks (Pillar 2). Once it's confident, the token exits early, and its state is carried forward unchanged.
+- Easy tokens ("the", punctuation) take 1 pass; hard tokens take up to the full R loops.
+- A small **ponder cost** in the loss discourages wasting loops.
+- Target: average loops per token well below R, with the same quality.
+
+### 5b. Mixture of Depths (MoD)
+- In selected layers, a router scores every token and only the **top ~50%** (capacity, tunable) go through the layer. The rest skip it through the residual connection.
+- Those layers cost about half the attention and feed-forward compute.
+- Combine with EMOE: MoD picks *which tokens* get computed, and EMOE picks *which experts* they use.
+- Use **expert-choice style top-k per sequence** in training. For generation, a small predictor decides skip/keep, so the model never needs to look ahead.
+
+### 5c. Multi-token prediction (MTP)
+- Besides the next token, small extra heads predict tokens **+2 and +3**, sharing the main model trunk and the tied output embedding.
+- More learning signal per step means fewer steps to the same loss.
+- The extra heads are training-only (they can also be used later for faster generation by speculative decoding).
+- Loss weight for the extra heads is tunable (start ~0.3).
+
+### 5d. Data filtering
+- **Deduplication:** exact and near-duplicate removal (MinHash) before tokenizing.
+- **Quality filters:** drop very short, garbled, or non-English documents (simple heuristics first, e.g. symbol ratio and repeated lines).
+- Later option: score documents with a small trained model and keep the best.
+- Goal: reach the same loss from fewer tokens, which means less training time.
+
+---
+
+## Benchmark: the parameter ceiling challenge
+
+**Scenario:** on this laptop, a standard Transformer tops out at about **30M parameters** before training becomes impractical (too slow, or doesn't fit). Phase 2 measures the real ceiling.
+
+**Goal:** VTransformer (EMOE + MoD + loops + lean memory) trains **250M–500M total parameters** on the same laptop, at about the same cost per token as the 30M baseline.
+
+**Why it's possible:**
+- **Compute** depends on *active* parameters per token, not total. EMOE keeps active parameters around the baseline's size (~20–30M), and MoD plus adaptive depth cut compute further.
+- **Memory** depends on *total* parameters. At ~8 bytes per parameter (Pillar 4a), 500M parameters is ~4 GB for weights, gradients and optimizer state, which fits in 15 GB with room for activations.
+
+**Caveats:**
+- A 500M EMOE model is not as smart as a 500M dense model. A rough rule of thumb puts an MoE between its active and total size (around the geometric mean, so ~120M dense-equivalent for 30M active / 500M total). It should still clearly beat the 30M baseline.
+- More experts need more training tokens before all of them learn something useful, so this benchmark uses longer runs.
+
+**Scoreboard (same laptop, same time budget):**
+
+| Model | Total params | Active per token | Peak RAM | Val loss | Tokens/sec |
+|---|---|---|---|---|---|
+| Baseline Transformer | ~30M (ceiling) | ~30M | measure | measure | measure |
+| VTransformer + EMOE + MoD | **250M–500M** | ~20–30M | measure | measure | measure |
+
+Win condition: VTransformer fits 250M+ total parameters **and** gets a lower validation loss than the baseline in the same training time.
+
+---
+
 ## How we prove it works
 
 Every claim gets checked against a **baseline**: a plain GPT-style Transformer (learned positions, standard attention, no sharing, no experts, FP32 AdamW, cosine schedule).
@@ -168,12 +221,16 @@ VTransformer/
     config.py          # all switches (attention type, loops, experts, etc.)
     attention.py       # RoPE, QK-Norm, GQA, gating, differential, sliding window
     emoe.py            # EMOE: tiny experts, shared pool, routers, shared expert
+    mod.py             # Mixture of Depths token routing
+    halting.py         # adaptive loop depth (halting scores, ponder cost)
+    mtp.py             # multi-token prediction heads
     block.py           # transformer block + per-loop adapters
     model.py           # VTransformer model
     baseline.py        # plain GPT baseline (+ normal MoE variant)
     optim.py           # Muon + AdamW (8-bit) setup, WSD schedule
   data/
     prepare.py         # download, train tokenizer, write token .bin files
+    filter.py          # dedup + quality filters
   train.py             # one training script for all models
   sample.py            # generate text from a checkpoint
   bench.py             # speed/memory benchmarks
@@ -190,10 +247,11 @@ VTransformer/
 - Try `torch-directml` on the Radeon 760M; keep it only if it beats the CPU.
 
 ### Phase 1: Data
-- Download TinyStories, train an 8k BPE tokenizer, write `train.bin` / `val.bin`.
+- Download TinyStories, run dedup + quality filters, train an 8k BPE tokenizer, write `train.bin` / `val.bin`.
 
 ### Phase 2: Baseline
 - Plain GPT baseline (~10M params). Train for 30 minutes and record loss and memory. This is the number to beat.
+- Find the baseline's real parameter ceiling on this laptop (expected ~30M).
 
 ### Phase 3: VTransformer v1 (core)
 - RoPE + QK-Norm + GQA + fused attention + tied embeddings + BF16 + WSD schedule.
@@ -207,6 +265,9 @@ VTransformer/
 ### Phase 6: EMOE
 - Normal MoE first (as a reference), then fine-grained experts, then the shared pool across layers, then the shared expert. Benchmark expert sizes.
 
+### Phase 6b: Less compute per token
+- Multi-token prediction, then Mixture of Depths, then adaptive loop depth. Ablation for each.
+
 ### Phase 7: Smarter attention experiments
 - Gated attention, differential attention, hybrid local/global layers. Run an ablation for each.
 
@@ -214,7 +275,8 @@ VTransformer/
 - Sequence-length curriculum, `torch.compile`, thread tuning.
 
 ### Phase 9: Results
-- Final head-to-head: baseline vs. normal MoE vs. VTransformer + EMOE. Charts and a write-up of what worked and what didn't.
+- Final head-to-head: baseline vs. normal MoE vs. VTransformer + EMOE + MoD. Charts and a write-up of what worked and what didn't.
+- Run the **parameter ceiling challenge** (30M baseline vs. 250M–500M VTransformer).
 
 ### Phase 10 (optional): Scale up
 - Best config on FineWeb-Edu, at the biggest size this PC can handle.
@@ -231,6 +293,8 @@ VTransformer/
 | Time to reach baseline's final val loss | 30 min | **≤ 15 min** |
 | Memory per parameter during training | ~16 bytes | **~8 bytes** |
 | Total parameters that fit in the same RAM | 1× | **2–4×** (reuse + EMOE + lean optimizer) |
+| Trainable total parameters on this laptop | ~30M | **250M–500M** (EMOE + MoD) |
+| Average loops per token (adaptive depth) | — | **well below max** |
 | Unique parameters for same depth (dense) | 1× | **~0.35×** |
 
 ---
