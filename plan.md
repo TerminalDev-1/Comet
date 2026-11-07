@@ -194,4 +194,7 @@ $Transformer/
 1. **End use:** finish sentences / write stories, chat, or something else? This decides the data after Phase 7.
 2. **Radeon GPU:** worth the time to get DirectML working, or stay on the CPU?
 3. **Context length:** is 256–512 tokens enough, or do you need longer?
-4. **Running it on Android later:** should we plan to export the trained model to run on a phone (e.g. ExecuTorch or ONNX)?
+
+## Decisions
+
+- **PC only.** Everything runs on the PC. No Android export or phone target unless it becomes absolutely necessary.
