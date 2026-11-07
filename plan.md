@@ -273,7 +273,24 @@ VTransformer/
 
 ### Phase 2: Baseline
 - ✅ Plain GPT baseline (6.89M params, d=256, 6 layers), 25 minutes: **val loss 2.607**, 9.1M tokens, 6,064 tok/s, 1.4 GB peak RAM. This is the number to beat. Details: `results/baseline.md`.
-- ⏳ Find the baseline's real ceiling: the size that gets the best loss in 25 minutes (2 more runs: ~3M and ~14M).
+- ⏭️ Ceiling sweep skipped (saves ~55 min). The single 25-minute baseline run logged val loss every minute, so its full curve is the reference.
+
+### The main race (replaces the ceiling sweep as the headline test)
+VTransformer trains for **10–15 minutes**. The baseline already ran 25 minutes, and we compare against its logged curve:
+
+| Baseline at | Val loss |
+|---|---|
+| 10 min | 3.078 |
+| 12 min | 2.971 |
+| 15 min | 2.839 |
+| 25 min (final) | **2.607** |
+
+**Win conditions:**
+1. **Faster:** VTransformer beats the baseline's loss at the same minute (e.g. < 2.971 at 12 min).
+2. **Main goal:** VTransformer reaches **2.607 or lower in ≤15 minutes** (the baseline needed 25). That's ≥1.7× faster training.
+3. **Stretch:** reach 2.607 in ≤12 minutes (≥2× faster), with stories that make more sense than the baseline's.
+
+**Fairness note:** at minute 10–15 the baseline's learning rate was still high (its schedule was planned for 25 min), so its mid-run numbers are a bit worse than a dedicated 10–15 minute baseline would get. That's why **win condition 2 is the one that counts:** matching the baseline's *final* 2.607 is a clean comparison.
 
 ### Phase 3: VTransformer v1 (core)
 - RoPE + QK-Norm + GQA + fused attention + tied embeddings + BF16 + WSD schedule.
@@ -335,7 +352,7 @@ VTransformer/
 
 - **Name:** VTransformer (no hyphens or spaces). Was "$Transformer" / "STransformer".
 - **MoE design name:** EMOE (Efficient Mixture of Experts). Was "SMOE".
-- **Time budget:** every training run is 20–30 minutes (default 25). Never hours.
+- **Time budget:** VTransformer runs are **10–15 minutes**. The baseline's single 25-minute run is the reference; no more long baseline runs. Never hours.
 - **Benchmark image:** when training is done, `results/benchmark.jpg` is pushed to GitHub and shown in the README.
 - **Training device:** CPU with BF16, 6 threads by default. The Radeon 760M was tested in Phase 0 and lost.
 - **PC only.** Everything runs on the PC. No Android export or phone target unless it becomes absolutely necessary.
