@@ -115,12 +115,15 @@ def peak_ram_mb():
 def evaluate(model, val_batches, autocast):
     model.eval()
     losses = []
+    correct, total = 0, 0
     for x, y in val_batches:
         with autocast():
-            _, loss = model(x, y)
+            logits, loss = model(x, y)
         losses.append(loss.item())
+        correct += (logits.argmax(-1) == y).sum().item()
+        total += y.numel()
     model.train()
-    return float(np.mean(losses))
+    return float(np.mean(losses)), correct / total  # loss, next-token accuracy
 
 
 def main():
@@ -169,10 +172,10 @@ def main():
     recent = []
     while True:
         if train_time >= next_eval or train_time >= budget:
-            vl = evaluate(model, val_batches, autocast)
+            vl, va = evaluate(model, val_batches, autocast)
             log({"step": step, "train_min": round(train_time / 60, 3), "tokens_M": round(tokens / 1e6, 3),
                  "train_loss": round(float(np.mean(recent)), 4) if recent else None,
-                 "val_loss": round(vl, 4), "lr": round(lr_at(min(1, train_time / budget), args), 6),
+                 "val_loss": round(vl, 4), "val_acc": round(va, 4), "lr": round(lr_at(min(1, train_time / budget), args), 6),
                  "tok_per_sec": round(tokens / train_time) if train_time else 0, "peak_ram_mb": peak_ram_mb(),
                  "eta_min": round(max(0.0, budget - train_time) / 60 * wall_per_train(), 1)})
             recent = []
@@ -196,11 +199,12 @@ def main():
         step += 1
         tokens += x.numel()
 
-    final_val = evaluate(model, val_batches, autocast)
+    final_val, final_acc = evaluate(model, val_batches, autocast)
     summary = {
         "name": args.name, "model": args.model, "config": dataclasses.asdict(cfg),
         "params": counts, "minutes": args.minutes, "steps": step, "tokens": tokens,
         "tok_per_sec": round(tokens / train_time), "final_val_loss": round(final_val, 4),
+        "final_val_acc": round(final_acc, 4),
         "peak_ram_mb": peak_ram_mb(), "dtype": args.dtype, "threads": args.threads,
         "batch": args.batch, "lr": args.lr, "schedule": args.schedule,
         "optim": args.optim, "muon_lr": args.muon_lr if args.optim == "muon" else None,

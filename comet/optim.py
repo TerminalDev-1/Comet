@@ -9,16 +9,17 @@ import torch
 
 @torch.no_grad()
 def newton_schulz(G, steps=5):
+    """Orthogonalize a matrix, or a stack of matrices (last two dims), e.g. EMOE expert weights."""
     a, b, c = 3.4445, -4.7750, 2.0315
     X = G.bfloat16()
-    X = X / (X.norm() + 1e-7)
-    transposed = X.size(0) > X.size(1)
+    X = X / (X.norm(dim=(-2, -1), keepdim=True) + 1e-7)
+    transposed = X.size(-2) > X.size(-1)
     if transposed:
-        X = X.T
+        X = X.mT
     for _ in range(steps):
-        A = X @ X.T
+        A = X @ X.mT
         X = a * X + (b * A + c * A @ A) @ X
-    return X.T if transposed else X
+    return X.mT if transposed else X
 
 
 class Muon(torch.optim.Optimizer):
@@ -38,7 +39,7 @@ class Muon(torch.optim.Optimizer):
                 buf.mul_(g["momentum"]).add_(p.grad)
                 upd = p.grad.add(buf, alpha=g["momentum"])  # Nesterov
                 upd = newton_schulz(upd, g["ns_steps"]).to(p.dtype)
-                scale = max(1.0, p.size(0) / p.size(1)) ** 0.5
+                scale = max(1.0, p.size(-2) / p.size(-1)) ** 0.5
                 if g["weight_decay"]:
                     p.mul_(1 - g["lr"] * g["weight_decay"])
                 p.add_(upd, alpha=-g["lr"] * scale)
@@ -64,8 +65,11 @@ def build_optimizer(model, kind, lr, weight_decay, muon_lr=0.02):
     """Each param group gets a 'base_lr'; train.py scales all groups by the schedule."""
     named = list(model.named_parameters())
     if kind == "muon":
-        hidden = [p for n, p in named if p.dim() == 2 and not n.startswith("tok.")]
-        other_decay = [p for n, p in named if p.dim() == 2 and n.startswith("tok.")]
+        # Muon: hidden weight matrices, including stacked 3D expert weights.
+        # AdamW: embeddings, routers, norms.
+        is_adam = lambda n: n.startswith("tok.") or "router" in n  # noqa: E731
+        hidden = [p for n, p in named if p.dim() >= 2 and not is_adam(n)]
+        other_decay = [p for n, p in named if p.dim() >= 2 and is_adam(n)]
         other_nodecay = [p for n, p in named if p.dim() < 2]
         muon = Muon(hidden, lr=muon_lr, weight_decay=0.0)
         adam = torch.optim.AdamW(

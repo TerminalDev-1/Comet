@@ -24,5 +24,6 @@
   "dtype": "bf16",
   "threads": 6,
   "batch": 16,
-  "lr": 0.001
+  "lr": 0.001,
+  "final_val_acc": 0.4521
 }

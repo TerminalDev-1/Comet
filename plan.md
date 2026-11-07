@@ -307,8 +307,11 @@ Comet trains for **10–15 minutes**. The baseline already ran 25 minutes, and w
 ### Phase 5: Parameter reuse
 - Looped shared blocks, per-loop norms and loop embeddings, then LoRA adapters. Compare at equal RAM.
 
-### Phase 6: EMOE
-- Normal MoE first (as a reference), then fine-grained experts, then the shared pool across layers, then the shared expert. Benchmark expert sizes.
+### Phase 6: EMOE (first pass done)
+- ✅ Built: tiny experts, one pool shared by all layers, shared expert, bias-based balancing, batched expert compute, Muon for expert weights. Next-token accuracy added to every eval (`evaluate.py`): baseline 45.2%, Comet v1 47.6%.
+- ✅ Holds **2.6× the parameters** (16.9M vs 6.5M) for the same compute per token, at 55–70% of dense speed.
+- ❌ Doesn't win in 10–15 min yet: 3-minute A/B gave 3.42 vs dense 3.06. Per token it's about even. Details: `results/emoe.md`.
+- ⏳ Next pass: speed (≥85% of dense), per-layer vs shared pool, fewer/bigger experts, pair with multi-token prediction.
 
 ### Phase 6b: Less compute per token
 - Multi-token prediction, then Mixture of Depths, then adaptive loop depth. Ablation for each.

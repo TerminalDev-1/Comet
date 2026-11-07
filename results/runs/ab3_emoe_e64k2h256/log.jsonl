@@ -1,0 +1,4 @@
+{"step": 0, "train_min": 0.0, "tokens_M": 0.0, "train_loss": null, "val_loss": 9.0479, "val_acc": 0.0153, "lr": 0.0, "tok_per_sec": 0, "peak_ram_mb": 782, "eta_min": 3.0}
+{"step": 38, "train_min": 1.004, "tokens_M": 0.156, "train_loss": 5.4664, "val_loss": 4.1676, "val_acc": 0.2726, "lr": 0.003, "tok_per_sec": 2583, "peak_ram_mb": 1794, "eta_min": 2.6}
+{"step": 75, "train_min": 2.004, "tokens_M": 0.307, "train_loss": 3.8789, "val_loss": 3.7129, "val_acc": 0.3221, "lr": 0.003, "tok_per_sec": 2555, "peak_ram_mb": 1811, "eta_min": 1.2}
+{"step": 120, "train_min": 3.005, "tokens_M": 0.492, "train_loss": 3.5538, "val_loss": 3.4186, "val_acc": 0.3565, "lr": 0.0003, "tok_per_sec": 2726, "peak_ram_mb": 1817, "eta_min": 0.0}

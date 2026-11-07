@@ -15,6 +15,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .attention import Attention, Norm
+from .emoe import EMOELayer, expert_params, make_pool
 
 
 @dataclass
@@ -31,6 +32,14 @@ class CometConfig:
     norm: str = "layer"  # "layer" (fast on CPU) or "rms"
     attn_impl: str = "manual"  # "manual" (fast on CPU at ctx 256) or "sdpa"
     mlp_mult: float = 4.0  # hidden = mlp_mult * d (scaled by 2/3 for swiglu to keep params equal)
+    # EMOE (Efficient Mixture of Experts). Off by default.
+    emoe: bool = False
+    n_experts: int = 64  # size of the ONE pool shared by all layers
+    top_k: int = 4  # experts each token uses per layer
+    expert_hidden: int = 128  # tiny experts (128 = smallest size that stays fast on this CPU)
+    shared_hidden: int = 192  # always-on shared expert per layer (0 = off)
+    balance_rate: float = 1e-3  # how fast router biases rebalance expert load
+    capacity: float = 1.25  # expert slot size as a multiple of average load
 
 
 class MLP(nn.Module):
@@ -54,10 +63,11 @@ class MLP(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, cfg):
+    def __init__(self, cfg, pool=None, out_std=0.02):
         super().__init__()
         self.n1, self.attn = Norm(cfg.d, cfg.norm), Attention(cfg)
-        self.n2, self.mlp = Norm(cfg.d, cfg.norm), MLP(cfg)
+        self.n2 = Norm(cfg.d, cfg.norm)
+        self.mlp = EMOELayer(cfg, pool, out_std) if pool is not None else MLP(cfg)
 
     def forward(self, x):
         x = x + self.attn(self.n1(x))
@@ -69,7 +79,12 @@ class Comet(nn.Module):
         super().__init__()
         self.cfg = cfg
         self.tok = nn.Embedding(cfg.vocab, cfg.d)
-        self.blocks = nn.ModuleList(Block(cfg) for _ in range(cfg.layers))
+        if cfg.emoe:
+            self.pool, out_std = make_pool(cfg)  # stored once, used by every layer
+            self.blocks = nn.ModuleList(Block(cfg, self.pool, out_std) for _ in range(cfg.layers))
+        else:
+            self.pool = None
+            self.blocks = nn.ModuleList(Block(cfg) for _ in range(cfg.layers))
         self.norm = Norm(cfg.d, cfg.norm)
         for m in self.modules():
             if isinstance(m, (nn.Linear, nn.Embedding)):
@@ -91,4 +106,14 @@ class Comet(nn.Module):
     def param_counts(self):
         total = sum(p.numel() for p in self.parameters())
         emb = self.tok.weight.numel()
-        return {"total": total, "active": total, "unique": total, "non_embedding": total - emb}
+        active = total
+        if self.pool is not None:
+            pool_total = sum(p.numel() for p in self.pool.parameters())
+            # each token uses top_k experts in each layer
+            used = min(self.cfg.n_experts, self.cfg.top_k * self.cfg.layers) * expert_params(self.pool)
+            touched = total - pool_total + min(used, pool_total)
+            # "active" = parameters each token is multiplied through (sets compute cost)
+            active = total - pool_total + self.cfg.top_k * self.cfg.layers * expert_params(self.pool)
+            return {"total": total, "active": active, "unique": total, "non_embedding": total - emb,
+                    "pool": pool_total, "touched_per_token": touched}
+        return {"total": total, "active": active, "unique": total, "non_embedding": total - emb}
