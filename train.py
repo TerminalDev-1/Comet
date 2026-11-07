@@ -40,6 +40,7 @@ def get_args():
     p.add_argument("--schedule", default="cosine", choices=["cosine", "wsd"])
     p.add_argument("--optim", default="adamw", choices=["adamw", "muon"])
     p.add_argument("--muon_lr", type=float, default=0.02)
+    p.add_argument("--expert_optim", default="muon", choices=["muon", "adamw"], help="optimizer for EMOE expert weights")
     p.add_argument("--decay_frac", type=float, default=0.25, help="wsd: fraction of time spent decaying")
     p.add_argument("--warmup_frac", type=float, default=0.03)
     p.add_argument("--weight_decay", type=float, default=0.1)
@@ -103,7 +104,7 @@ def lr_at(frac, args):
 
 
 def make_optimizer(model, args):
-    return build_optimizer(model, args.optim, args.lr, args.weight_decay, args.muon_lr)
+    return build_optimizer(model, args.optim, args.lr, args.weight_decay, args.muon_lr, args.expert_optim)
 
 
 def peak_ram_mb():
@@ -194,7 +195,8 @@ def main():
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         opt.step()
-        recent.append(loss.item())
+        main = getattr(model, "last_main_loss", None)  # log next-token loss only (not MTP extras)
+        recent.append((main if main is not None else loss).item())
         train_time += time.perf_counter() - t0
         step += 1
         tokens += x.numel()
@@ -207,7 +209,7 @@ def main():
         "final_val_acc": round(final_acc, 4),
         "peak_ram_mb": peak_ram_mb(), "dtype": args.dtype, "threads": args.threads,
         "batch": args.batch, "lr": args.lr, "schedule": args.schedule,
-        "optim": args.optim, "muon_lr": args.muon_lr if args.optim == "muon" else None,
+        "optim": args.optim, "expert_optim": args.expert_optim, "muon_lr": args.muon_lr if args.optim == "muon" else None,
     }
     with open(os.path.join(out_dir, "summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
