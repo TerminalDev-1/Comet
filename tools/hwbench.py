@@ -52,9 +52,11 @@ def main():
         device = torch.device("cpu")
         thread_options = [4, 6, 12]
 
-    dtypes = {"fp32": torch.float32, "bf16": torch.bfloat16}
     if args.device == "dml":
-        dtypes["fp16"] = torch.float16
+        # DirectML hard-crashes on BF16, so test FP16 instead.
+        dtypes = {"fp32": torch.float32, "fp16": torch.float16}
+    else:
+        dtypes = {"fp32": torch.float32, "bf16": torch.bfloat16}
 
     results = {
         "device": args.device,

@@ -23,19 +23,18 @@ Success is measured, not assumed: every idea gets tested against a plain baselin
 | RAM | 15 GB (shared with GPU) | Memory is the main limit, which is why "parameters per GB" is a core goal. |
 | Python | 3.13 | PyTorch must support 3.13 (current releases do). |
 
-### Time budget math (estimates; Phase 0 measures the real numbers)
-- Training costs about **6 × active parameters** operations per token.
-- Expected CPU speed in PyTorch: ~200–500 billion operations per second.
-- So in a **25-minute run on the CPU**:
+### Time budget math (measured in Phase 0, CPU BF16, 6 threads)
+- Training costs about **6 × active parameters** operations per token. The CPU really delivers ~300 GFLOPS in training.
+- In a **25-minute run on the CPU**:
 
-| Active params | Tokens/sec (est.) | Tokens in 25 min |
+| Model (plain GPT) | Tokens/sec | Tokens in 25 min |
 |---|---|---|
-| 30M | ~2–3k | ~4M (too few for good English) |
-| 10M | ~5–8k | ~8–12M |
-| 5M | ~10–15k | ~15–20M (enough for TinyStories-style English) |
+| 6.9M params | 7,151 (measured) | ~11M |
+| 13.9M params | 3,521 (measured) | ~5M (too few for good English) |
+| 30M params | ~1,500 (est.) | ~2M |
 
-Realistic scale on the **CPU**: **~3–8M active parameters**, with **EMOE total parameters around 50–150M**, trained on **~10–20M tokens** per run.
-If the **Radeon 760M** works through DirectML, it could be several times faster, which raises all of these numbers. Testing it is the top priority of Phase 0.
+Realistic scale on the **CPU**: **~3–7M active parameters**, with **EMOE total parameters around 50–150M**, trained on **~10–15M tokens** per run. Phase 3 speed-ups (fused attention, `torch.compile`, GQA) should raise tokens/sec.
+The **Radeon 760M** was tested and is slower than the CPU for training (see `results/hardware.md`), so everything trains on the CPU.
 
 ---
 
@@ -176,9 +175,8 @@ Target: **roughly half the memory per parameter** of the baseline setup, before 
 
 **Scenario:** within 25 minutes, a standard Transformer's useful ceiling is its best-performing size. On the CPU, that's expected to be **~5–10M parameters**. Bigger dense models see too few tokens to learn well. Phase 2 measures the real ceiling.
 
-**Goal:** in the same 25 minutes, VTransformer (EMOE + MoD + loops + lean memory) trains **~10–20× more total parameters** than the baseline's ceiling:
-- **CPU:** ~50–150M total parameters.
-- **Radeon GPU (if DirectML works):** aim for **250M+** total.
+**Goal:** in the same 25 minutes, VTransformer (EMOE + MoD + loops + lean memory) trains **~10–20× more total parameters** than the baseline's ceiling: **~50–150M total parameters on the CPU**.
+- **Stretch goal: 250M+.** The Radeon GPU can't help (tested in Phase 0), so this depends on MoD, adaptive depth and Phase 3/8 speed-ups raising tokens/sec enough to train more experts in 25 minutes.
 
 **Why it's possible:**
 - **Compute** depends on *active* parameters per token, not total. EMOE keeps active parameters at the baseline's size, and MoD plus adaptive depth cut compute further.
@@ -193,7 +191,7 @@ Target: **roughly half the memory per parameter** of the baseline setup, before 
 | Model | Total params | Active per token | Peak RAM | Val loss | Tokens/sec |
 |---|---|---|---|---|---|
 | Baseline Transformer | ~5–10M (ceiling) | same | measure | measure | measure |
-| VTransformer + EMOE + MoD | **~50–150M (CPU), 250M+ (GPU)** | ~baseline | measure | measure | measure |
+| VTransformer + EMOE + MoD | **~50–150M (stretch 250M+)** | ~baseline | measure | measure | measure |
 
 Win condition: VTransformer trains 10×+ more total parameters **and** gets a lower validation loss than the baseline in the same 25 minutes.
 
@@ -262,7 +260,8 @@ VTransformer/
 - ✅ Install PyTorch 2.15 (CPU build), plus `tokenizers`, `numpy`, `matplotlib`, in `.venv`.
 - ✅ BF16 works: ~0.75–0.85 TFLOPS, ~2.3× faster than FP32. 4–6 threads get ~93% of 12-thread speed.
 - ✅ EMOE expert hidden size: 128 minimum, 256+ near full speed.
-- ⏳ `torch-directml` on the Radeon 760M: blocked, because it has no Python 3.13 build (needs 3.12). Keep it only if it beats the CPU.
+- ✅ `torch-directml` on the Radeon 760M (Python 3.12 venv `.venv-dml`): **loses to the CPU**. No BF16, FP16 training gives NaN, and FP32 is 25–70% slower than CPU BF16. **Decision: train on the CPU.**
+- ✅ Real training speed: a 6.9M-param GPT does **7,151 tokens/sec** on CPU BF16 (6 threads), so ~11M tokens per 25-minute run.
 - Results: `results/hardware.md`.
 
 ### Phase 1: Data
@@ -317,7 +316,7 @@ VTransformer/
 | Time to reach baseline's final val loss | 25 min | **≤ 12 min** |
 | Memory per parameter during training | ~16 bytes | **~8 bytes** |
 | Total parameters that fit in the same RAM | 1× | **2–4×** (reuse + EMOE + lean optimizer) |
-| Total parameters trained in 25 min | ~5–10M | **~50–150M CPU, 250M+ GPU** (EMOE + MoD) |
+| Total parameters trained in 25 min | ~5–10M | **~50–150M, stretch 250M+** (EMOE + MoD) |
 | Average loops per token (adaptive depth) | — | **well below max** |
 | Unique parameters for same depth (dense) | 1× | **~0.35×** |
 
@@ -326,8 +325,7 @@ VTransformer/
 ## Open questions
 
 1. **End use:** finish sentences / write stories, chat, or something else? Decides the data after Phase 9.
-2. **Radeon GPU:** worth the time to get DirectML working, or stay on the CPU?
-3. **Context length:** is 256–512 tokens enough, or do you need longer?
+2. **Context length:** is 256–512 tokens enough, or do you need longer?
 
 ## Decisions
 
@@ -335,4 +333,5 @@ VTransformer/
 - **MoE design name:** EMOE (Efficient Mixture of Experts). Was "SMOE".
 - **Time budget:** every training run is 20–30 minutes (default 25). Never hours.
 - **Benchmark image:** when training is done, `results/benchmark.jpg` is pushed to GitHub and shown in the README.
+- **Training device:** CPU with BF16, 6 threads by default. The Radeon 760M was tested in Phase 0 and lost.
 - **PC only.** Everything runs on the PC. No Android export or phone target unless it becomes absolutely necessary.

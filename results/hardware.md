@@ -37,4 +37,30 @@ Software: Python 3.13, PyTorch 2.15.0 (CPU build). Raw numbers: [hw_cpu.json](hw
 
 ## Radeon 760M (DirectML)
 
-**Not tested yet.** `torch-directml` has no build for Python 3.13 (it needs Python 3.12 or older). See plan.md, Phase 0.
+Setup: separate Python 3.12 environment (`.venv-dml`), `torch-directml` with PyTorch 2.4.1. Raw numbers: [hw_dml.json](hw_dml.json).
+**BF16 is not supported** (DirectML hard-crashes), so FP16 was tested instead.
+
+| Matmul test | FP32 GFLOPS | FP16 GFLOPS |
+|---|---|---|
+| 2048³ | 732 | 1178 |
+| Model shapes (d=256–512) | 127–1039 (noisy) | 809–938 |
+| Expert shapes (hidden 64–512) | 755–1010 | 670–907 |
+
+On raw matrix math, the GPU is only ~1.1–1.4× the CPU's BF16 speed.
+
+## Real training steps (forward + backward + AdamW)
+
+Small GPT, context 256, batch 16, vocab 8192. Script: `tools/trainbench.py`. Raw numbers: [train_cpu.json](train_cpu.json), [train_dml.json](train_dml.json).
+
+| Model | CPU FP32 (6 thr) | **CPU BF16 (6 thr)** | GPU FP32 | GPU FP16 |
+|---|---|---|---|---|
+| 6.9M params (d=256, 6 layers) | 3,299 tok/s | **7,151 tok/s** | 4,191 tok/s | 5,978 tok/s (loss = NaN) |
+| 13.9M params (d=384, 6 layers) | 1,824 tok/s | **3,521 tok/s** | 2,831 tok/s | 4,163 tok/s (loss = NaN) |
+| Tokens in 25 min (6.9M model) | 4.9M | **10.7M** | 6.3M | 9.0M |
+
+## Verdict
+
+- **CPU + BF16 is the training device.** It beats the GPU in FP32 by ~25–70%, and it's numerically stable.
+- GPU FP16 is about equal to the CPU, but pure FP16 training gives NaN. DirectML has no working mixed-precision (autocast) support, and some optimizer ops fall back to the CPU. Not worth the complexity.
+- The CPU and GPU share one power, heat and memory budget, so running both at once wouldn't add much.
+- **Measured speed is lower than the first estimate:** a ~7M model sees ~11M tokens in 25 minutes, not 15–20M. Phase 3 upgrades (fused attention kernel, `torch.compile`, GQA) should push this up.
