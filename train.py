@@ -24,6 +24,7 @@ import psutil
 import torch
 
 from vtransformer import MODELS
+from vtransformer.optim import build_optimizer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -36,6 +37,10 @@ def get_args():
     p.add_argument("--batch", type=int, default=16)
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--min_lr_frac", type=float, default=0.1)
+    p.add_argument("--schedule", default="cosine", choices=["cosine", "wsd"])
+    p.add_argument("--optim", default="adamw", choices=["adamw", "muon"])
+    p.add_argument("--muon_lr", type=float, default=0.02)
+    p.add_argument("--decay_frac", type=float, default=0.25, help="wsd: fraction of time spent decaying")
     p.add_argument("--warmup_frac", type=float, default=0.03)
     p.add_argument("--weight_decay", type=float, default=0.1)
     p.add_argument("--grad_clip", type=float, default=1.0)
@@ -81,19 +86,24 @@ class Data:
 
 
 def lr_at(frac, args):
-    """Warmup, then cosine decay to min_lr_frac, as a function of elapsed time fraction."""
+    """LR as a function of elapsed time fraction.
+    cosine: warmup, then cosine decay to min_lr_frac.
+    wsd:    warmup, flat (stable) LR, then linear decay to min_lr_frac over the last decay_frac.
+    """
     if frac < args.warmup_frac:
         return args.lr * frac / args.warmup_frac
+    if args.schedule == "wsd":
+        start = 1 - args.decay_frac
+        if frac < start:
+            return args.lr
+        p = min(1.0, (frac - start) / args.decay_frac)
+        return args.lr * (1 - (1 - args.min_lr_frac) * p)
     p = min(1.0, (frac - args.warmup_frac) / (1 - args.warmup_frac))
     return args.lr * (args.min_lr_frac + (1 - args.min_lr_frac) * 0.5 * (1 + math.cos(math.pi * p)))
 
 
 def make_optimizer(model, args):
-    decay = [p for n, p in model.named_parameters() if p.dim() >= 2]
-    no_decay = [p for n, p in model.named_parameters() if p.dim() < 2]
-    return torch.optim.AdamW(
-        [{"params": decay, "weight_decay": args.weight_decay}, {"params": no_decay, "weight_decay": 0.0}],
-        lr=args.lr, betas=(0.9, 0.95), fused=False)
+    return build_optimizer(model, args.optim, args.lr, args.weight_decay, args.muon_lr)
 
 
 def peak_ram_mb():
@@ -171,9 +181,9 @@ def main():
                 break
 
         t0 = time.perf_counter()
-        lr = lr_at(train_time / budget, args)
+        mult = lr_at(train_time / budget, args) / args.lr  # schedule multiplier
         for g in opt.param_groups:
-            g["lr"] = lr
+            g["lr"] = g["base_lr"] * mult
         x, y = train.get()
         with autocast():
             _, loss = model(x, y)
@@ -192,7 +202,8 @@ def main():
         "params": counts, "minutes": args.minutes, "steps": step, "tokens": tokens,
         "tok_per_sec": round(tokens / train_time), "final_val_loss": round(final_val, 4),
         "peak_ram_mb": peak_ram_mb(), "dtype": args.dtype, "threads": args.threads,
-        "batch": args.batch, "lr": args.lr,
+        "batch": args.batch, "lr": args.lr, "schedule": args.schedule,
+        "optim": args.optim, "muon_lr": args.muon_lr if args.optim == "muon" else None,
     }
     with open(os.path.join(out_dir, "summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
