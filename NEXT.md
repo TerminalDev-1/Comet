@@ -47,7 +47,30 @@ Comet's **own** contributions so far:
 3. **Looped blocks + adaptive depth** (next in the plan): shares weights across depth, and tokens decide how many loops they need. Saves memory; it may tie like MoD.
 4. **"Absorb more" on the data side:** ordering/curriculum (easy stories first) or dedup-aware sampling. Cheap to test, and it fits the 10–15 minute goal.
 
-My recommendation: **1 first** (it's already built and is Comet's most original idea), then **2**.
+My recommendation: **fix the MoD memory problem first** (see "Open issues" below, short task), then **1** (it's already built and is Comet's most original idea), then **2**.
+
+## Open issues from an outside review (address tomorrow)
+
+A separate review of a copy of this repo flagged these. My take and the fix for each:
+
+### 1. MoD works against Goal 2 ("more parameters per GB") — ✅ valid, top priority
+- **Finding:** MoD raises peak RAM from **1.4 GB to 2.3 GB (+64%)** while keeping the same parameter count. Comet's goals include fitting *more* parameters per GB, so MoD as built moves the wrong way. I listed the RAM number but didn't call out the conflict; I should have.
+- **Likely causes:** per-layer gather/scatter copies, a full (batch × 256 × 256) mask per MoD layer, and padding every sequence to the longest selected count.
+- **Fix to try:** build the mask once and reuse it across the 3 MoD layers, drop the separate eye/valid masks (use a single additive bias), skip padding by grouping sequences, and measure peak RAM with a dedicated memory test, not just the process working set (which also includes data pages).
+- **Rule from now on:** every feature reports **peak RAM next to loss and speed**, and anything that raises RAM per parameter needs a reason.
+
+### 2. MoD tokens learn less each — ✅ valid (already in results/mod.md)
+- Skipped tokens bypass 3 of 6 layers, so each token teaches less. At 12 minutes the +24% speed and the per-token loss canceled out (2.458 vs 2.453).
+- Small correction to the review's wording: it's per-token learning that drops, not "learning-rate degradation."
+
+### 3. MoD complicates fast text generation (KV cache) — ✅ valid for Phase 11 (package)
+- Today `sample.py` recomputes the whole context every step (no KV cache), so MoD generation works but is slow.
+- A real KV cache must handle tokens that skipped a layer (they have no key/value entry there). That's solvable (store KV only for processed tokens, plus their positions) but it's extra work, and it matters for the reusable package. Until then, MoD stays **off by default** (it already is).
+
+### 4. EMOE's single shared pool may strain representations — ⚠️ a hypothesis to test
+- **Claim:** early layers (low-level token patterns) and late layers (meaning, story structure) may not be able to reuse the same experts well. One shared pool could force a compromise.
+- **This is exactly what tomorrow's option 1 tests:** shared pool vs. per-layer pools at **equal memory**. If the shared pool loses, a middle option is **group-shared pools** (layers 0–2 share one pool, layers 3–5 share another).
+- The review's text was cut off in the screenshot after this point; paste the rest tomorrow if it has more items.
 
 ## How to resume
 
