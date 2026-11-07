@@ -4,3 +4,4 @@ torch>=2.15
 numpy
 tokenizers
 matplotlib
+pyarrow

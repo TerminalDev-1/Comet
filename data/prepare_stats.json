@@ -1,0 +1,59 @@
+{
+  "train_filter": {
+    "input_docs": 529930,
+    "dropped_quality": {
+      "non_english_chars": 5530,
+      "cut_off": 4697,
+      "repetitive_words": 63,
+      "low_letter_ratio": 88,
+      "too_short": 2
+    },
+    "dropped_exact_dup": 19849,
+    "dropped_near_dup": 0,
+    "kept_docs": 499646
+  },
+  "val_filter": {
+    "input_docs": 21990,
+    "dropped_quality": {
+      "non_english_chars": 212,
+      "cut_off": 205,
+      "too_short": 1,
+      "low_letter_ratio": 3
+    },
+    "dropped_exact_dup": 0,
+    "dropped_near_dup": 0,
+    "kept_docs": 21569
+  },
+  "train_tokens": 109927195,
+  "val_tokens": 4580139,
+  "vocab_size": 8192,
+  "avg_tokens_per_story": 220.0,
+  "chars_per_token": 4.1,
+  "seconds": 252.4,
+  "roundtrip_ok": true,
+  "example": {
+    "text": "Spot. Spot saw the shiny car and said, \"Wow, Kitty, your car is so bright and cl",
+    "tokens": [
+      "Spot",
+      ".",
+      "\u0120Spot",
+      "\u0120saw",
+      "\u0120the",
+      "\u0120shiny",
+      "\u0120car",
+      "\u0120and",
+      "\u0120said",
+      ",",
+      "\u0120\"",
+      "Wow",
+      ",",
+      "\u0120Kitty",
+      ",",
+      "\u0120your",
+      "\u0120car",
+      "\u0120is",
+      "\u0120so",
+      "\u0120bright"
+    ]
+  }
+}

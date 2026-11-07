@@ -264,8 +264,12 @@ VTransformer/
 - ✅ Real training speed: a 6.9M-param GPT does **7,151 tokens/sec** on CPU BF16 (6 threads), so ~11M tokens per 25-minute run.
 - Results: `results/hardware.md`.
 
-### Phase 1: Data
-- Download TinyStories, run dedup + quality filters, train an 8k BPE tokenizer, write `train.bin` / `val.bin`.
+### Phase 1: Data ✅
+- Run: `python data/prepare.py` (downloads, filters, trains tokenizer, writes `.bin` files; ~4 minutes).
+- ✅ Downloaded 1 of 4 TinyStories train shards (530k stories) + validation. That's ~10× what one 25-minute run uses.
+- ✅ Filters (`data/filter.py`): repaired broken quotes, dropped 10,380 low-quality stories (cut-off endings, broken characters, garbled text) and **19,849 exact duplicates (3.7%)**. MinHash near-duplicate check found none at ≥80% similarity (verified it catches edited copies).
+- ✅ Kept **499,646 stories → 109.9M train tokens**; validation 21,569 stories → 4.6M tokens.
+- ✅ 8192-token byte-level BPE tokenizer (`data/tokenizer.json`): ~4.1 characters per token, ~220 tokens per story, exact round-trip.
 
 ### Phase 2: Baseline
 - Plain GPT baseline. Train for 25 minutes and record loss and memory. This is the number to beat.
