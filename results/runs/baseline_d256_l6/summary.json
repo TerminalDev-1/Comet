@@ -1,0 +1,28 @@
+{
+  "name": "baseline_d256_l6",
+  "model": "baseline",
+  "config": {
+    "vocab": 8192,
+    "ctx": 256,
+    "d": 256,
+    "layers": 6,
+    "heads": 4,
+    "dropout": 0.0
+  },
+  "params": {
+    "total": 6887936,
+    "active": 6887936,
+    "unique": 6887936,
+    "non_embedding": 4725248
+  },
+  "minutes": 25.0,
+  "steps": 2221,
+  "tokens": 9097216,
+  "tok_per_sec": 6064,
+  "final_val_loss": 2.607,
+  "peak_ram_mb": 1420,
+  "dtype": "bf16",
+  "threads": 6,
+  "batch": 16,
+  "lr": 0.001
+}

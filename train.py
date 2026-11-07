@@ -151,6 +151,11 @@ def main():
 
     train_time, step, tokens = 0.0, 0, 0
     next_eval = 0.0
+    wall_start = time.perf_counter()
+
+    def wall_per_train():
+        # Wall-clock seconds per training second (includes eval overhead), for the ETA.
+        return (time.perf_counter() - wall_start) / train_time if train_time > 0 else 1.0
     recent = []
     while True:
         if train_time >= next_eval or train_time >= budget:
@@ -158,7 +163,8 @@ def main():
             log({"step": step, "train_min": round(train_time / 60, 3), "tokens_M": round(tokens / 1e6, 3),
                  "train_loss": round(float(np.mean(recent)), 4) if recent else None,
                  "val_loss": round(vl, 4), "lr": round(lr_at(min(1, train_time / budget), args), 6),
-                 "tok_per_sec": round(tokens / train_time) if train_time else 0, "peak_ram_mb": peak_ram_mb()})
+                 "tok_per_sec": round(tokens / train_time) if train_time else 0, "peak_ram_mb": peak_ram_mb(),
+                 "eta_min": round(max(0.0, budget - train_time) / 60 * wall_per_train(), 1)})
             recent = []
             next_eval += args.eval_every_sec
             if train_time >= budget:

@@ -272,8 +272,8 @@ VTransformer/
 - ✅ 8192-token byte-level BPE tokenizer (`data/tokenizer.json`): ~4.1 characters per token, ~220 tokens per story, exact round-trip.
 
 ### Phase 2: Baseline
-- Plain GPT baseline. Train for 25 minutes and record loss and memory. This is the number to beat.
-- Find the baseline's real ceiling: the size that gets the best loss in 25 minutes (expected ~5–10M on the CPU).
+- ✅ Plain GPT baseline (6.89M params, d=256, 6 layers), 25 minutes: **val loss 2.607**, 9.1M tokens, 6,064 tok/s, 1.4 GB peak RAM. This is the number to beat. Details: `results/baseline.md`.
+- ⏳ Find the baseline's real ceiling: the size that gets the best loss in 25 minutes (2 more runs: ~3M and ~14M).
 
 ### Phase 3: VTransformer v1 (core)
 - RoPE + QK-Norm + GQA + fused attention + tied embeddings + BF16 + WSD schedule.
