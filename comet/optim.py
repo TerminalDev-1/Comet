@@ -61,13 +61,18 @@ class Combined:
             o.step()
 
 
-def build_optimizer(model, kind, lr, weight_decay, muon_lr=0.02):
-    """Each param group gets a 'base_lr'; train.py scales all groups by the schedule."""
+def build_optimizer(model, kind, lr, weight_decay, muon_lr=0.02, expert_optim="muon"):
+    """Each param group gets a 'base_lr'; train.py scales all groups by the schedule.
+
+    expert_optim="adamw" keeps EMOE expert weights (pool.*) on AdamW: Muon's cost grows
+    with parameter count, and the expert pool is most of the parameters.
+    """
     named = list(model.named_parameters())
     if kind == "muon":
-        # Muon: hidden weight matrices, including stacked 3D expert weights.
-        # AdamW: embeddings, routers, norms.
-        is_adam = lambda n: n.startswith("tok.") or "router" in n  # noqa: E731
+        # Muon: hidden weight matrices (optionally including stacked 3D expert weights).
+        # AdamW: embeddings, routers, norms (and experts if expert_optim="adamw").
+        is_adam = lambda n: (n.startswith("tok.") or "router" in n  # noqa: E731
+                             or (expert_optim == "adamw" and n.startswith("pool.")))
         hidden = [p for n, p in named if p.dim() >= 2 and not is_adam(n)]
         other_decay = [p for n, p in named if p.dim() >= 2 and is_adam(n)]
         other_nodecay = [p for n, p in named if p.dim() < 2]

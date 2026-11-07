@@ -311,7 +311,8 @@ Comet trains for **10–15 minutes**. The baseline already ran 25 minutes, and w
 - ✅ Built: tiny experts, one pool shared by all layers, shared expert, bias-based balancing, batched expert compute, Muon for expert weights. Next-token accuracy added to every eval (`evaluate.py`): baseline 45.2%, Comet v1 47.6%.
 - ✅ Holds **2.6× the parameters** (16.9M vs 6.5M) for the same compute per token, at 55–70% of dense speed.
 - ❌ Doesn't win in 10–15 min yet: 3-minute A/B gave 3.42 vs dense 3.06. Per token it's about even. Details: `results/emoe.md`.
-- ⏳ Next pass: speed (≥85% of dense), per-layer vs shared pool, fewer/bigger experts, pair with multi-token prediction.
+- ✅ Tuning pass: flat indexing + AdamW for experts + "lite" config → **91% of dense speed**, gap cut from 0.36 to 0.14 (3.20 vs 3.06). Still doesn't beat dense in 3 min; per token it's about equal.
+- ⏳ Later: pair with multi-token prediction, per-layer vs shared pool, and longer data budgets where MoE normally pays off.
 
 ### Phase 6b: Less compute per token
 - Multi-token prediction, then Mixture of Depths, then adaptive loop depth. Ablation for each.

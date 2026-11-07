@@ -28,26 +28,31 @@ class ExpertPool(nn.Module):
         self.w_up = nn.Parameter(torch.randn(n_experts, d, hidden) * 0.02)
         self.w_out = nn.Parameter(torch.randn(n_experts, hidden, d) * out_std)
 
-    def run(self, xs, e_sorted, counts):
-        """Run all experts at once with batched matmuls.
+    def slots(self, e_sorted, counts):
+        """Give each (token, expert) pair a row in a flat (E*cap) buffer.
 
-        xs: (M, d) token copies sorted by expert id; e_sorted: (M,) their expert ids;
-        counts: (E,) tokens per expert. Each expert gets a padded slot of size max(counts),
-        so there's no per-expert Python loop and no dropped tokens.
+        Each expert gets a slot of `cap` rows (capacity x average load). Overflow pairs
+        (rare once balanced) go to a dummy row and get weight 0, so those tokens only
+        use the shared expert. Returns (cap, write_rows, read_rows, keep).
         """
-        E, M = self.n, xs.shape[0]
+        E, M = self.n, e_sorted.shape[0]
         cap = min(int(counts.max()), math.ceil(self.capacity * M / E))
         starts = torch.cumsum(counts, 0) - counts
-        pos = torch.arange(M, device=xs.device) - starts[e_sorted]
-        keep = pos < cap  # overflow tokens (rare once balanced) only get the shared expert
-        dt = torch.bfloat16 if torch.is_autocast_cpu_enabled() else xs.dtype
-        buf = xs.new_zeros(E, cap, xs.shape[1], dtype=dt)
-        buf = buf.index_put((e_sorted[keep], pos[keep]), xs[keep].to(dt))
+        pos = torch.arange(M, device=e_sorted.device) - starts[e_sorted]
+        keep = pos < cap
+        row = e_sorted * cap + pos
+        write = torch.where(keep, row, torch.full_like(row, E * cap))  # dummy row
+        read = torch.where(keep, row, torch.zeros_like(row))  # any valid row; weight is 0
+        return cap, write, read, keep
+
+    def run(self, xs, cap, write, read):
+        """Run all experts at once with batched matmuls on flat-indexed slots."""
+        E, D = self.n, xs.shape[1]
+        dt = xs.dtype
+        buf = xs.new_zeros(E * cap + 1, D).index_copy(0, write, xs)[:-1].view(E, cap, D)
         h = F.silu(torch.bmm(buf, self.w_gate.to(dt))) * torch.bmm(buf, self.w_up.to(dt))
-        y = torch.bmm(h, self.w_out.to(dt))
-        out = xs.new_zeros(M, xs.shape[1], dtype=y.dtype)
-        out[keep] = y[e_sorted[keep], pos[keep]]
-        return out
+        y = torch.bmm(h, self.w_out.to(dt)).view(E * cap, D)
+        return y.index_select(0, read)
 
 
 class SwiGLU(nn.Module):
@@ -88,13 +93,18 @@ class EMOELayer(nn.Module):
         w = scores.gather(1, sel)
         w = (w / w.sum(-1, keepdim=True)).to(flat.dtype)
 
-        flat_e = sel.reshape(-1)
-        order = torch.argsort(flat_e, stable=True)
-        tok = torch.arange(N, device=x.device).repeat_interleave(self.k)[order]
-        counts_t = torch.bincount(flat_e, minlength=pool.n)
-        ys = pool.run(flat[tok], flat_e[order], counts_t)
-        ys = ys * w.reshape(-1)[order].unsqueeze(1)
-        out = torch.zeros(N, D, dtype=ys.dtype, device=x.device).index_add_(0, tok, ys)
+        with torch.no_grad():  # integer bookkeeping
+            flat_e = sel.reshape(-1)
+            order = torch.argsort(flat_e, stable=True)
+            e_sorted = flat_e[order]
+            tok = torch.arange(N, device=x.device).repeat_interleave(self.k)[order]
+            counts_t = torch.bincount(flat_e, minlength=pool.n)
+            cap, write, read, keep = pool.slots(e_sorted, counts_t)
+        dt = torch.bfloat16 if torch.is_autocast_cpu_enabled() else flat.dtype
+        xs = flat.to(dt).index_select(0, tok)
+        ys = pool.run(xs, cap, write, read)
+        wk = (w.reshape(-1)[order] * keep).to(dt).unsqueeze(1)
+        out = torch.zeros(N, D, dtype=dt, device=x.device).index_add_(0, tok, ys * wk)
 
         if self.training:
             with torch.no_grad():  # aux-loss-free balancing
