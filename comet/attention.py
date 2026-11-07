@@ -36,9 +36,13 @@ class Rotary(nn.Module):
         self.register_buffer("cos", freqs.cos()[None, None], persistent=False)
         self.register_buffer("sin", freqs.sin()[None, None], persistent=False)
 
-    def forward(self, x):  # x: (B, H, T, hd), rotate-half layout
+    def forward(self, x, pos=None):  # x: (B, H, T, hd), rotate-half layout
         T = x.shape[2]
-        cos, sin = self.cos[:, :, :T].to(x.dtype), self.sin[:, :, :T].to(x.dtype)
+        if pos is None:
+            cos, sin = self.cos[:, :, :T], self.sin[:, :, :T]
+        else:  # token subset (Mixture of Depths): use each token's original position
+            cos, sin = self.cos[0, 0][pos].unsqueeze(1), self.sin[0, 0][pos].unsqueeze(1)
+        cos, sin = cos.to(x.dtype), sin.to(x.dtype)
         x1, x2 = x.chunk(2, dim=-1)
         return torch.cat((x1 * cos - x2 * sin, x1 * sin + x2 * cos), dim=-1)
 
@@ -58,7 +62,9 @@ class Attention(nn.Module):
             self.q_norm, self.k_norm = Norm(self.hd, cfg.norm), Norm(self.hd, cfg.norm)
         self.register_buffer("mask", torch.ones(cfg.ctx, cfg.ctx, dtype=torch.bool).triu(1), persistent=False)
 
-    def forward(self, x):
+    def forward(self, x, pos=None, valid=None):
+        """pos/valid are for token subsets (Mixture of Depths): pos = original positions
+        (B, T), valid = which subset slots are real tokens (B, T); padding slots are masked."""
         B, T, C = x.shape
         H, KV, hd = self.heads, self.kv_heads, self.hd
         q = self.q(x).view(B, T, H, hd).transpose(1, 2)
@@ -67,8 +73,18 @@ class Attention(nn.Module):
         if self.qk_norm:
             q, k = self.q_norm(q), self.k_norm(k)
         if self.rope is not None:
-            q, k = self.rope(q), self.rope(k)
-        if self.impl == "sdpa":
+            q, k = self.rope(q, pos), self.rope(k, pos)
+        if valid is not None:
+            # subset is sorted by position, so causal = lower triangle; also hide padding keys
+            # (each slot can always see itself, so padding rows never become all -inf)
+            eye = torch.eye(T, dtype=torch.bool, device=x.device)
+            m = self.mask[:T, :T] | ((~valid)[:, None, :] & ~eye)  # (B, T, T)
+            g = H // KV
+            q = q.view(B, KV, g, T, hd)
+            att = (q @ k.unsqueeze(2).transpose(-2, -1)) / math.sqrt(hd)
+            att = att.masked_fill(m[:, None, None], float("-inf")).softmax(-1)
+            y = (att @ v.unsqueeze(2)).view(B, H, T, hd)
+        elif self.impl == "sdpa":
             if KV != H:
                 k, v = k.repeat_interleave(H // KV, 1), v.repeat_interleave(H // KV, 1)
             y = F.scaled_dot_product_attention(q, k, v, is_causal=True)

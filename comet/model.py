@@ -45,6 +45,11 @@ class CometConfig:
     mtp_weight: float = 0.3  # weight of the MTP loss
     mtp_frac: float = 0.5  # fraction of positions scored by the MTP head
     mtp_block: bool = True  # extra transformer block per MTP depth (False = light, cheaper)
+    # Mixture of Depths. Off by default.
+    mod: bool = False
+    mod_capacity: float = 0.5  # target fraction of tokens processed in MoD layers
+    mod_every: int = 2  # MoD on every 2nd layer (1, 3, 5)
+    mod_aux_weight: float = 0.1  # weight of the router's side loss
 
 
 class MLP(nn.Module):
@@ -74,9 +79,47 @@ class Block(nn.Module):
         self.n2 = Norm(cfg.d, cfg.norm)
         self.mlp = EMOELayer(cfg, pool, out_std) if pool is not None else MLP(cfg)
 
-    def forward(self, x):
-        x = x + self.attn(self.n1(x))
+    def forward(self, x, pos=None, valid=None):
+        x = x + self.attn(self.n1(x), pos, valid)
         return x + self.mlp(self.n2(x))
+
+
+class MoDRouter(nn.Module):
+    """Mixture of Depths: decide per token whether a block processes it or it skips ahead.
+
+    Causal routing: a token is processed if its own router score > 0, so the decision never
+    depends on future tokens (no leak into validation scores). A side loss (BCE) teaches the
+    router to match "top `capacity` fraction of the sequence", which keeps ~capacity of tokens
+    processed. The block's update is scaled by sigmoid(score), which trains the router.
+    """
+
+    def __init__(self, cfg):
+        super().__init__()
+        self.lin = nn.Linear(cfg.d, 1, bias=False)
+        self.capacity = cfg.mod_capacity
+
+    def forward(self, block, x):
+        B, T, D = x.shape
+        s = self.lin(x).squeeze(-1).float()  # (B, T)
+        aux = None
+        if self.training:
+            k = max(1, int(T * self.capacity))
+            with torch.no_grad():
+                target = torch.zeros_like(s).scatter_(1, s.topk(k, dim=1).indices, 1.0)
+            aux = F.binary_cross_entropy_with_logits(s, target)
+        with torch.no_grad():
+            sel = s > 0
+            counts = sel.sum(1)
+            C = max(1, int(counts.max()))
+            ar = torch.arange(T, device=x.device)
+            key = torch.where(sel, ar, ar + T)  # selected tokens first, in position order
+            idx = key.argsort(dim=1)[:, :C]  # (B, C)
+            valid = torch.arange(C, device=x.device)[None] < counts[:, None]
+        xs = x.gather(1, idx[..., None].expand(B, C, D))
+        delta = block(xs, pos=idx, valid=valid) - xs
+        w = (torch.sigmoid(s).gather(1, idx) * valid).to(delta.dtype)
+        x = x.scatter_add(1, idx[..., None].expand(B, C, D), delta * w[..., None])
+        return x, aux, sel.float().mean()
 
 
 class MTPModule(nn.Module):
@@ -112,6 +155,10 @@ class Comet(nn.Module):
             self.pool = None
             self.blocks = nn.ModuleList(Block(cfg) for _ in range(cfg.layers))
         self.norm = Norm(cfg.d, cfg.norm)
+        # Mixture of Depths on every `mod_every`-th layer (layers 1, 3, 5 for mod_every=2)
+        self.mod_layers = [i for i in range(cfg.layers) if cfg.mod and i % cfg.mod_every == cfg.mod_every - 1]
+        self.mod_routers = nn.ModuleDict({str(i): MoDRouter(cfg) for i in self.mod_layers})
+        self.mod_frac = None  # fraction of tokens processed in MoD layers (last forward)
         for m in self.modules():
             if isinstance(m, (nn.Linear, nn.Embedding)):
                 nn.init.normal_(m.weight, std=0.02)
@@ -121,8 +168,17 @@ class Comet(nn.Module):
 
     def forward(self, idx, targets=None):
         x = self.tok(idx)
-        for b in self.blocks:
-            x = b(x)
+        aux, fracs = [], []
+        for i, b in enumerate(self.blocks):
+            if str(i) in self.mod_routers:
+                x, a, f = self.mod_routers[str(i)](b, x)
+                fracs.append(f)
+                if a is not None:
+                    aux.append(a)
+            else:
+                x = b(x)
+        if fracs:
+            self.mod_frac = float(torch.stack(fracs).mean())
         logits = self.norm(x) @ self.tok.weight.T  # tied embeddings
         if targets is None:
             return logits
@@ -130,6 +186,8 @@ class Comet(nn.Module):
         self.last_main_loss = loss.detach()
         if self.training and self.mtp:
             loss = loss + self.cfg.mtp_weight * self._mtp_loss(x, targets)
+        if aux:
+            loss = loss + self.cfg.mod_aux_weight * torch.stack(aux).mean()
         return logits, loss
 
     def _mtp_loss(self, h, targets):

@@ -316,7 +316,8 @@ Comet trains for **10–15 minutes**. The baseline already ran 25 minutes, and w
 
 ### Phase 6b: Less compute per token
 - ✅ Multi-token prediction built (full + light). ❌ Doesn't beat dense in 3 min: light 3.172, full 3.273 vs dense control 3.115. Details: `results/mtp.md`.
-- ⏳ Mixture of Depths, then adaptive loop depth. These *cut* compute, which fits the 10–15 minute budget better than features that add it.
+- ✅ Mixture of Depths (causal routing, verified leak-free). **Every 2nd layer: ties dense on quality (3.106 vs 3.115) while 9% faster.** Every layer: loses (3.293). Details: `results/mod.md`.
+- ⏳ Adaptive loop depth (needs looped blocks from Phase 5).
 
 ### Phase 7: Smarter attention experiments
 - Gated attention, differential attention, hybrid local/global layers. Run an ablation for each.
