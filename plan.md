@@ -1,7 +1,7 @@
-# VTransformer — Plan
+# Comet — Plan
 
-**Status:** planning. No code yet.
-**Code name:** `vtransformer`
+**Status:** Phases 0–3 done. Comet v1 reaches the baseline's 25-minute loss in 9.7 minutes (2.6× faster).
+**Code name:** `comet`
 **Its Mixture of Experts design:** **EMOE** (Efficient Mixture of Experts)
 
 ## Goals
@@ -10,7 +10,11 @@ Build a Transformer variant that, compared with a standard Transformer on the sa
 
 1. **Trains faster:** reaches the same validation loss in less wall-clock time (target 1.5–3×).
 2. **Fits more parameters per GB of memory** (target 2–4×), by reusing parameters, sharing experts and cutting optimizer memory.
-3. **Runs on a PC in 20–30 minutes:** every training run fits a **hard 20–30 minute budget** (never hours). PC only; no Android target.
+3. **Runs on a PC in 10–15 minutes:** every Comet run fits a **10–15 minute budget** (never hours). PC only; no Android target.
+4. **Absorbs more, gets more right:** in less training time, the model learns more from each token and gets more things right. Measured by:
+   - **Loss per token seen** (learning efficiency), not just loss per minute.
+   - **Next-token accuracy** on held-out stories (how often the top guess is right).
+   - **Fact-consistency probes:** short fixed tests (does it keep names, objects and who-did-what straight across a story?), scored automatically.
 
 Success is measured, not assumed: every idea gets tested against a plain baseline Transformer (see "How we prove it works").
 
@@ -104,7 +108,7 @@ Many tiny experts means many small matrix operations, which can be slower on a C
 
 ### EMOE tests
 Race three versions with the same compute per token:
-1. Dense VTransformer (no experts)
+1. Dense Comet (no experts)
 2. Normal MoE (8 big experts per layer)
 3. EMOE (tiny experts, shared pool, shared expert)
 
@@ -175,7 +179,7 @@ Target: **roughly half the memory per parameter** of the baseline setup, before 
 
 **Scenario:** within 25 minutes, a standard Transformer's useful ceiling is its best-performing size. On the CPU, that's expected to be **~5–10M parameters**. Bigger dense models see too few tokens to learn well. Phase 2 measures the real ceiling.
 
-**Goal:** in the same 25 minutes, VTransformer (EMOE + MoD + loops + lean memory) trains **~10–20× more total parameters** than the baseline's ceiling: **~50–150M total parameters on the CPU**.
+**Goal:** in the same 25 minutes, Comet (EMOE + MoD + loops + lean memory) trains **~10–20× more total parameters** than the baseline's ceiling: **~50–150M total parameters on the CPU**.
 - **Stretch goal: 250M+.** The Radeon GPU can't help (tested in Phase 0), so this depends on MoD, adaptive depth and Phase 3/8 speed-ups raising tokens/sec enough to train more experts in 25 minutes.
 
 **Why it's possible:**
@@ -191,9 +195,9 @@ Target: **roughly half the memory per parameter** of the baseline setup, before 
 | Model | Total params | Active per token | Peak RAM | Val loss | Tokens/sec |
 |---|---|---|---|---|---|
 | Baseline Transformer | ~5–10M (ceiling) | same | measure | measure | measure |
-| VTransformer + EMOE + MoD | **~50–150M (stretch 250M+)** | ~baseline | measure | measure | measure |
+| Comet + EMOE + MoD | **~50–150M (stretch 250M+)** | ~baseline | measure | measure | measure |
 
-Win condition: VTransformer trains 10×+ more total parameters **and** gets a lower validation loss than the baseline in the same 25 minutes.
+Win condition: Comet trains 10×+ more total parameters **and** gets a lower validation loss than the baseline in the same 25 minutes.
 
 ---
 
@@ -228,11 +232,11 @@ Every claim gets checked against a **baseline**: a plain GPT-style Transformer (
 ## Project layout (planned)
 
 ```
-VTransformer/
+Comet/
   plan.md              # this file
   README.md
   requirements.txt     # torch, numpy, tokenizers, datasets, matplotlib
-  vtransformer/
+  comet/
     config.py          # all switches (attention type, loops, experts, etc.)
     attention.py       # RoPE, QK-Norm, GQA, gating, differential, sliding window
     emoe.py            # EMOE: tiny experts, shared pool, routers, shared expert
@@ -240,7 +244,7 @@ VTransformer/
     halting.py         # adaptive loop depth (halting scores, ponder cost)
     mtp.py             # multi-token prediction heads
     block.py           # transformer block + per-loop adapters
-    model.py           # VTransformer model
+    model.py           # Comet model
     baseline.py        # plain GPT baseline (+ normal MoE variant)
     optim.py           # Muon + AdamW (8-bit) setup, WSD schedule
   data/
@@ -276,7 +280,7 @@ VTransformer/
 - ⏭️ Ceiling sweep skipped (saves ~55 min). The single 25-minute baseline run logged val loss every minute, so its full curve is the reference.
 
 ### The main race (replaces the ceiling sweep as the headline test)
-VTransformer trains for **10–15 minutes**. The baseline already ran 25 minutes, and we compare against its logged curve:
+Comet trains for **10–15 minutes**. The baseline already ran 25 minutes, and we compare against its logged curve:
 
 | Baseline at | Val loss |
 |---|---|
@@ -286,13 +290,13 @@ VTransformer trains for **10–15 minutes**. The baseline already ran 25 minutes
 | 25 min (final) | **2.607** |
 
 **Win conditions:**
-1. **Faster:** VTransformer beats the baseline's loss at the same minute (e.g. < 2.971 at 12 min).
-2. **Main goal:** VTransformer reaches **2.607 or lower in ≤15 minutes** (the baseline needed 25). That's ≥1.7× faster training.
+1. **Faster:** Comet beats the baseline's loss at the same minute (e.g. < 2.971 at 12 min).
+2. **Main goal:** Comet reaches **2.607 or lower in ≤15 minutes** (the baseline needed 25). That's ≥1.7× faster training.
 3. **Stretch:** reach 2.607 in ≤12 minutes (≥2× faster), with stories that make more sense than the baseline's.
 
 **Fairness note:** at minute 10–15 the baseline's learning rate was still high (its schedule was planned for 25 min), so its mid-run numbers are a bit worse than a dedicated 10–15 minute baseline would get. That's why **win condition 2 is the one that counts:** matching the baseline's *final* 2.607 is a clean comparison.
 
-### Phase 3: VTransformer v1 (core) ✅
+### Phase 3: Comet v1 (core) ✅
 - ✅ RoPE + QK-Norm + GQA + SwiGLU + tied embeddings + BF16 + WSD schedule, plus **Muon** (pulled forward from Phase 4).
 - ✅ **Main goal and stretch goal hit:** reached the baseline's final 2.607 in **9.7 min (2.6× faster)**; 12-minute run finished at **2.420**. Details: `results/phase3.md`, chart: `results/benchmark.jpg`.
 - Finding: on this CPU the fused attention kernel and RMSNorm are *slower*; defaults use plain attention math + LayerNorm.
@@ -316,8 +320,8 @@ VTransformer trains for **10–15 minutes**. The baseline already ran 25 minutes
 - Sequence-length curriculum, `torch.compile`, thread tuning.
 
 ### Phase 9: Results
-- Final head-to-head: baseline vs. normal MoE vs. VTransformer + EMOE + MoD. Charts and a write-up of what worked and what didn't.
-- Run the **parameter ceiling challenge** (baseline ceiling vs. VTransformer, 25 minutes each).
+- Final head-to-head: baseline vs. normal MoE vs. Comet + EMOE + MoD. Charts and a write-up of what worked and what didn't.
+- Run the **parameter ceiling challenge** (baseline ceiling vs. Comet, 25 minutes each).
 - **Publish the benchmark (required):**
   - `bench.py` makes **`results/benchmark.jpg`**, one image with 4 charts: validation loss vs. training time, validation loss vs. peak RAM, total vs. active parameters, and tokens/sec.
   - Also save a **`results/benchmark.md`** table with the exact numbers, plus sample text from each model on the same prompts.
@@ -327,14 +331,23 @@ VTransformer trains for **10–15 minutes**. The baseline already ran 25 minutes
 ### Phase 10 (optional): Scale up
 - Best config on FineWeb-Edu, at the biggest size this PC can handle.
 
-### Phase 11: Save it globally
-- Once VTransformer and EMOE are finished and tested, save a summary to the global CLAUDE.md (name, how it works, when to offer it), so every future AI project can use it as an option.
+### Phase 11: Reusable implementation
+- Turn `comet/` into a clean, installable package (`pip install git+https://github.com/TerminalDev-1/Comet`), with a simple API (`Comet(CometConfig(...))`, `train(...)`), presets (tiny / small / EMOE), and docs.
+- Keep the baseline and benchmark scripts so anyone can reproduce the results.
+
+### Phase 12: Save it globally
+- Once Comet and EMOE are finished and tested, save a summary to the global CLAUDE.md (name, how it works, when to offer it, where the package lives), so every future AI project can use it as an option.
+
+### Phase 13: Research paper
+- Write it the way labs do: abstract, introduction, related work, method (Comet architecture, EMOE, MoD, adaptive depth, MTP), experimental setup, results with charts and tables, ablations, limitations, conclusion, references.
+- Every number comes from runs in `results/`; ablations show what each part adds.
+- Publish as `paper/comet.pdf` (built from LaTeX) in the repo. Posting to arXiv needs your own account and an endorsement, so that step is yours.
 
 ---
 
 ## Target numbers (to check, not promises)
 
-| Metric | Baseline | VTransformer goal |
+| Metric | Baseline | Comet goal |
 |---|---|---|
 | Time to reach baseline's final val loss | 25 min | **≤ 12 min** |
 | Memory per parameter during training | ~16 bytes | **~8 bytes** |
@@ -352,9 +365,9 @@ VTransformer trains for **10–15 minutes**. The baseline already ran 25 minutes
 
 ## Decisions
 
-- **Name:** VTransformer (no hyphens or spaces). Was "$Transformer" / "STransformer".
+- **Name:** Comet (capital C, rest lowercase). Fast and bright. Was VTransformer, before that "$Transformer" / "STransformer". GitHub repo: TerminalDev-1/Comet.
 - **MoE design name:** EMOE (Efficient Mixture of Experts). Was "SMOE".
-- **Time budget:** VTransformer runs are **10–15 minutes**. The baseline's single 25-minute run is the reference; no more long baseline runs. Never hours.
+- **Time budget:** Comet runs are **10–15 minutes**. The baseline's single 25-minute run is the reference; no more long baseline runs. Never hours.
 - **Benchmark image:** when training is done, `results/benchmark.jpg` is pushed to GitHub and shown in the README.
 - **Training device:** CPU with BF16, 6 threads by default. The Radeon 760M was tested in Phase 0 and lost.
 - **PC only.** Everything runs on the PC. No Android export or phone target unless it becomes absolutely necessary.

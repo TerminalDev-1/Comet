@@ -1,4 +1,4 @@
-"""Plain GPT baseline: the model VTransformer has to beat.
+"""Plain GPT baseline: the model Comet has to beat.
 
 Standard GPT-2 style: learned position embeddings, LayerNorm, plain (unfused) causal
 attention, GELU MLP, tied input/output embeddings. No sharing, no experts.

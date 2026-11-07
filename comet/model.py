@@ -1,4 +1,4 @@
-"""VTransformer model (Phase 3 core).
+"""Comet model (Phase 3 core).
 
 Core upgrades over the baseline:
   - RoPE positions (no position table), QK-Norm, grouped-query attention (GQA)
@@ -18,7 +18,7 @@ from .attention import Attention, Norm
 
 
 @dataclass
-class VConfig:
+class CometConfig:
     vocab: int = 8192
     ctx: int = 256
     d: int = 256
@@ -64,8 +64,8 @@ class Block(nn.Module):
         return x + self.mlp(self.n2(x))
 
 
-class VTransformer(nn.Module):
-    def __init__(self, cfg: VConfig):
+class Comet(nn.Module):
+    def __init__(self, cfg: CometConfig):
         super().__init__()
         self.cfg = cfg
         self.tok = nn.Embedding(cfg.vocab, cfg.d)

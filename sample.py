@@ -8,7 +8,7 @@ import os
 import torch
 from tokenizers import Tokenizer
 
-from vtransformer import MODELS
+from comet import MODELS
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PROMPTS = ["Once upon a time", "Tom and his dog", "The little girl was sad because", "One day, a big bird"]

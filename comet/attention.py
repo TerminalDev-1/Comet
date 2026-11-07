@@ -1,4 +1,4 @@
-"""VTransformer attention: RoPE, QK-Norm, grouped-query attention.
+"""Comet attention: RoPE, QK-Norm, grouped-query attention.
 
 Phase 3 finding (results/phase3.md): on this CPU (Ryzen 5 8640HS, BF16, context 256)
   - plain attention math is ~1.7x faster than the fused SDPA kernel, and

@@ -1,10 +1,10 @@
-# Phase 3: VTransformer v1
+# Phase 3: Comet v1
 
 ## Result
 
-**VTransformer reached the baseline's final 25-minute loss (2.607) in 9.7 minutes (2.6× faster), and finished its 12-minute run at 2.420.** It saw only 3.6M tokens vs. the baseline's 9.1M, so it learns far more per token.
+**Comet reached the baseline's final 25-minute loss (2.607) in 9.7 minutes (2.6× faster), and finished its 12-minute run at 2.420.** It saw only 3.6M tokens vs. the baseline's 9.1M, so it learns far more per token.
 
-| Minute | Baseline (25-min run) | VTransformer (12-min run) |
+| Minute | Baseline (25-min run) | Comet (12-min run) |
 |---|---|---|
 | 1 | 4.384 | 3.817 |
 | 3 | 3.763 | 3.163 |
@@ -14,7 +14,7 @@
 | 12 | 2.971 | **2.420** |
 | 25 | **2.607** | — |
 
-Run: `python train.py --model vtransformer --name vt_v1_muon_12m --minutes 12 --lr 0.003 --optim muon --muon_lr 0.02 --schedule wsd`
+Run: `python train.py --model comet --name vt_v1_muon_12m --minutes 12 --lr 0.003 --optim muon --muon_lr 0.02 --schedule wsd`
 Config: d=256, 6 layers, 4 query heads / 2 KV heads, RoPE, QK-Norm, SwiGLU, tied embeddings, 6.52M params.
 
 ## Fair 3-minute A/B (each run with its own full schedule)
@@ -22,8 +22,8 @@ Config: d=256, 6 layers, 4 query heads / 2 KV heads, RoPE, QK-Norm, SwiGLU, tied
 | Run | Val loss @ 3 min | Tokens/sec |
 |---|---|---|
 | Baseline GPT (AdamW, cosine) | 3.980 | 6,102 |
-| VTransformer v1 (AdamW, WSD) | 3.473 | 6,021 |
-| **VTransformer v1 (Muon, WSD)** | **3.061** | 5,072 |
+| Comet v1 (AdamW, WSD) | 3.473 | 6,021 |
+| **Comet v1 (Muon, WSD)** | **3.061** | 5,072 |
 
 - Architecture alone (same optimizer family) is a clear win: 3.98 → 3.47.
 - **Muon is the biggest single win:** 3.47 → 3.06, despite costing ~16% speed (Newton-Schulz steps on the CPU).

@@ -1,4 +1,4 @@
-"""Train any model in vtransformer.MODELS under a wall-clock time budget.
+"""Train any model in comet.MODELS under a wall-clock time budget.
 
 Example:
     python train.py --model baseline --name baseline_d256 --minutes 25 --d 256 --layers 6 --heads 4
@@ -23,8 +23,8 @@ import numpy as np
 import psutil
 import torch
 
-from vtransformer import MODELS
-from vtransformer.optim import build_optimizer
+from comet import MODELS
+from comet.optim import build_optimizer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
