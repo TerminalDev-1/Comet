@@ -22,7 +22,15 @@ Full numbers: [results/benchmark.md](results/benchmark.md) · details: [results/
 - **Training:** Muon optimizer (hidden matrices) + AdamW (embeddings), warmup-stable-decay schedule, BF16
 - **CPU-tuned:** plain attention math and LayerNorm, which measured faster than the "fused" kernel and RMSNorm on this CPU
 
-Coming next (see [plan.md](plan.md)): parameter reuse (looped blocks), **EMOE** (Efficient Mixture of Experts), Mixture of Depths, adaptive loop depth, multi-token prediction.
+## Experimental options (built and tested, off by default)
+
+| Option | Turn on | 3-min result vs dense Comet | Notes |
+|---|---|---|---|
+| **EMOE** (Efficient Mixture of Experts) | `--set emoe=true` | 3.20 vs 3.115 | 2.6× the parameters at the same compute; 91% of dense speed. [results/emoe.md](results/emoe.md) |
+| **Multi-token prediction** | `--set mtp_depth=1` | 3.17 vs 3.115 | Light version shown. [results/mtp.md](results/mtp.md) |
+| **Mixture of Depths** | `--set mod=true` | 3.106 vs 3.115 | 12-min race: tie (2.458 vs 2.453), +24% tokens/sec. [results/mod.md](results/mod.md) |
+
+Coming next (see [plan.md](plan.md)): parameter reuse (looped blocks), adaptive loop depth, reusable package, research paper.
 
 ## Run it
 

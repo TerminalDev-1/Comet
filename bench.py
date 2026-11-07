@@ -29,7 +29,15 @@ def load(name):
 def label(s):
     if s["model"] == "baseline":
         return f"Baseline GPT ({s['minutes']:.0f} min)"
-    return f"Comet ({s['minutes']:.0f} min, {s.get('optim', 'adamw')})"
+    extras = [n for n, on in (("EMOE", s["config"].get("emoe")), ("MoD", s["config"].get("mod")),
+                              ("MTP", s["config"].get("mtp_depth"))) if on]
+    return f"Comet{' + ' + ' + '.join(extras) if extras else ''} ({s['minutes']:.0f} min)"
+
+
+def color(s):
+    if s["model"] == "baseline":
+        return COLORS["baseline"]
+    return "#e8743b" if s["config"].get("mod") or s["config"].get("emoe") else COLORS["comet"]
 
 
 def first_time_reaching(log, target):
@@ -45,6 +53,8 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--runs", nargs="+", default=["baseline_d256_l6", "vt_v1_muon_12m"])
     p.add_argument("--out", default=os.path.join(ROOT, "results", "benchmark.jpg"))
+    p.add_argument("--md", default=os.path.join(ROOT, "results", "benchmark.md"))
+    p.add_argument("--title", default="Comet vs. Baseline GPT")
     args = p.parse_args()
 
     runs = [(n, *load(n)) for n in args.runs]
@@ -53,24 +63,27 @@ def main():
 
     plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.right": False})
     fig, ax = plt.subplots(2, 2, figsize=(12, 8.5), dpi=130)
-    fig.suptitle("Comet vs. Baseline GPT — same laptop (Ryzen 5 8640HS, CPU, BF16)",
+    fig.suptitle(f"{args.title} — same laptop (Ryzen 5 8640HS, CPU, BF16)",
                  fontsize=14, fontweight="bold")
 
     # 1. Val loss vs training time
     a = ax[0, 0]
     for name, log, s in runs:
-        c = COLORS.get(s["model"], None)
+        c = color(s)
         a.plot([r["train_min"] for r in log], [r["val_loss"] for r in log], color=c, lw=2.2, label=label(s))
     a.axhline(target, color="#d64545", ls="--", lw=1.2)
     a.text(0.3, target - 0.04, f"Baseline final: {target}", color="#d64545", va="top", fontsize=9)
+    k = 0
     for name, log, s in runs:
         if s["model"] != "baseline":
             t = first_time_reaching(log, target)
             if t:
-                a.plot([t], [target], "o", color=COLORS["comet"], ms=7)
-                a.annotate(f"reached in {t:.1f} min\n({base[2]['minutes'] / t:.1f}× faster)", (t, target),
-                           xytext=(t + 1.2, target + 0.45), fontsize=9, color=COLORS["comet"],
-                           arrowprops=dict(arrowstyle="->", color=COLORS["comet"]))
+                c = color(s)
+                a.plot([t], [target], "o", color=c, ms=7)
+                a.annotate(f"reached in {t:.1f} min ({base[2]['minutes'] / t:.1f}× faster)", (t, target),
+                           xytext=(t + 1.2, target + 0.45 + 0.3 * k), fontsize=9, color=c,
+                           arrowprops=dict(arrowstyle="->", color=c))
+                k += 1
     a.set_ylim(2.2, 4.6)
     a.set_xlabel("Training time (minutes)")
     a.set_ylabel("Validation loss (lower is better)")
@@ -80,7 +93,7 @@ def main():
     # 2. Val loss vs tokens seen
     a = ax[0, 1]
     for name, log, s in runs:
-        a.plot([r["tokens_M"] for r in log], [r["val_loss"] for r in log], color=COLORS.get(s["model"]),
+        a.plot([r["tokens_M"] for r in log], [r["val_loss"] for r in log], color=color(s),
                lw=2.2, label=label(s))
     a.axhline(target, color="#d64545", ls="--", lw=1.2)
     a.set_ylim(2.2, 4.6)
@@ -92,7 +105,7 @@ def main():
     # 3. Final loss + speed
     a = ax[1, 0]
     names = [label(s).replace(" (", "\n(") for _, _, s in runs]
-    cols = [COLORS.get(s["model"]) for _, _, s in runs]
+    cols = [color(s) for _, _, s in runs]
     bars = a.bar(names, [s["final_val_loss"] for _, _, s in runs], color=cols, width=0.55)
     for b, (_, _, s) in zip(bars, runs):
         a.text(b.get_x() + b.get_width() / 2, b.get_height() + 0.02,
@@ -108,7 +121,7 @@ def main():
     for i, (_, _, s) in enumerate(runs):
         vals = [s["params"]["total"] / 1e6, s["params"]["active"] / 1e6, s["peak_ram_mb"] / 1024, s["tokens"] / 1e6]
         xs = [j + i * width for j in range(len(metrics))]
-        bs = a.bar(xs, vals, width=width, color=COLORS.get(s["model"]), label=label(s))
+        bs = a.bar(xs, vals, width=width, color=color(s), label=label(s))
         for b, v in zip(bs, vals):
             a.text(b.get_x() + b.get_width() / 2, v + 0.1, f"{v:.1f}", ha="center", va="bottom", fontsize=8)
     a.set_xticks([j + width * (len(runs) - 1) / 2 for j in range(len(metrics))])
@@ -121,7 +134,7 @@ def main():
     print("saved", args.out)
 
     # Markdown table
-    md = ["# Benchmark", "", "![benchmark](benchmark.jpg)", "",
+    md = ["# Benchmark", "", f"![benchmark]({os.path.basename(args.out)})", "",
           "| Model | Train time | Final val loss | Time to reach baseline's final loss | Tokens/sec | Tokens seen | Params (total / active) | Peak RAM |",
           "|---|---|---|---|---|---|---|---|"]
     for name, log, s in runs:
@@ -129,9 +142,9 @@ def main():
         md.append(f"| {label(s)} | {s['minutes']:.0f} min | **{s['final_val_loss']:.3f}** | "
                   f"{f'{t:.1f} min' if t else '—'} | {s['tok_per_sec']:,} | {s['tokens'] / 1e6:.1f}M | "
                   f"{s['params']['total'] / 1e6:.2f}M / {s['params']['active'] / 1e6:.2f}M | {s['peak_ram_mb']:,} MB |")
-    with open(os.path.join(ROOT, "results", "benchmark.md"), "w", encoding="utf-8") as f:
+    with open(args.md, "w", encoding="utf-8") as f:
         f.write("\n".join(md) + "\n")
-    print("saved results/benchmark.md")
+    print("saved", args.md)
 
 
 if __name__ == "__main__":
