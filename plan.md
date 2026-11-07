@@ -251,7 +251,7 @@ VTransformer/
   train.py             # one training script for all models
   sample.py            # generate text from a checkpoint
   bench.py             # speed/memory benchmarks
-  results/             # logs, charts, comparison notes
+  results/             # logs, benchmark.jpg, benchmark.md
 ```
 
 ---
@@ -294,6 +294,11 @@ VTransformer/
 ### Phase 9: Results
 - Final head-to-head: baseline vs. normal MoE vs. VTransformer + EMOE + MoD. Charts and a write-up of what worked and what didn't.
 - Run the **parameter ceiling challenge** (baseline ceiling vs. VTransformer, 25 minutes each).
+- **Publish the benchmark (required):**
+  - `bench.py` makes **`results/benchmark.jpg`**, one image with 4 charts: validation loss vs. training time, validation loss vs. peak RAM, total vs. active parameters, and tokens/sec.
+  - Also save a **`results/benchmark.md`** table with the exact numbers, plus sample text from each model on the same prompts.
+  - Show `benchmark.jpg` at the top of the **README** on GitHub.
+  - Commit and push both files, and regenerate them after every major training run so the repo always shows the latest results.
 
 ### Phase 10 (optional): Scale up
 - Best config on FineWeb-Edu, at the biggest size this PC can handle.
@@ -327,4 +332,5 @@ VTransformer/
 - **Name:** VTransformer (no hyphens or spaces). Was "$Transformer" / "STransformer".
 - **MoE design name:** EMOE (Efficient Mixture of Experts). Was "SMOE".
 - **Time budget:** every training run is 20–30 minutes (default 25). Never hours.
+- **Benchmark image:** when training is done, `results/benchmark.jpg` is pushed to GitHub and shown in the README.
 - **PC only.** Everything runs on the PC. No Android export or phone target unless it becomes absolutely necessary.
