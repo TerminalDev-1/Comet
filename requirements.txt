@@ -5,3 +5,4 @@ numpy
 tokenizers
 matplotlib
 pyarrow
+psutil
