@@ -292,8 +292,10 @@ VTransformer trains for **10–15 minutes**. The baseline already ran 25 minutes
 
 **Fairness note:** at minute 10–15 the baseline's learning rate was still high (its schedule was planned for 25 min), so its mid-run numbers are a bit worse than a dedicated 10–15 minute baseline would get. That's why **win condition 2 is the one that counts:** matching the baseline's *final* 2.607 is a clean comparison.
 
-### Phase 3: VTransformer v1 (core)
-- RoPE + QK-Norm + GQA + fused attention + tied embeddings + BF16 + WSD schedule.
+### Phase 3: VTransformer v1 (core) ✅
+- ✅ RoPE + QK-Norm + GQA + SwiGLU + tied embeddings + BF16 + WSD schedule, plus **Muon** (pulled forward from Phase 4).
+- ✅ **Main goal and stretch goal hit:** reached the baseline's final 2.607 in **9.7 min (2.6× faster)**; 12-minute run finished at **2.420**. Details: `results/phase3.md`, chart: `results/benchmark.jpg`.
+- Finding: on this CPU the fused attention kernel and RMSNorm are *slower*; defaults use plain attention math + LayerNorm.
 
 ### Phase 4: Memory per parameter
 - BF16 weights, Muon, 8-bit optimizer states, checkpointing. Measure bytes per parameter.

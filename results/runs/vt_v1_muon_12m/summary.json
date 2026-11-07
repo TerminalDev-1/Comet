@@ -1,0 +1,37 @@
+{
+  "name": "vt_v1_muon_12m",
+  "model": "vtransformer",
+  "config": {
+    "vocab": 8192,
+    "ctx": 256,
+    "d": 256,
+    "layers": 6,
+    "heads": 4,
+    "kv_heads": 2,
+    "rope": true,
+    "qk_norm": true,
+    "mlp": "swiglu",
+    "norm": "layer",
+    "attn_impl": "manual",
+    "mlp_mult": 4.0
+  },
+  "params": {
+    "total": 6524928,
+    "active": 6524928,
+    "unique": 6524928,
+    "non_embedding": 4427776
+  },
+  "minutes": 12.0,
+  "steps": 884,
+  "tokens": 3620864,
+  "tok_per_sec": 5029,
+  "final_val_loss": 2.4195,
+  "peak_ram_mb": 1415,
+  "dtype": "bf16",
+  "threads": 6,
+  "batch": 16,
+  "lr": 0.003,
+  "schedule": "wsd",
+  "optim": "muon",
+  "muon_lr": 0.02
+}

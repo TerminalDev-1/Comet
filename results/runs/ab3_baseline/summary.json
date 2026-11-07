@@ -1,0 +1,31 @@
+{
+  "name": "ab3_baseline",
+  "model": "baseline",
+  "config": {
+    "vocab": 8192,
+    "ctx": 256,
+    "d": 256,
+    "layers": 6,
+    "heads": 4,
+    "dropout": 0.0
+  },
+  "params": {
+    "total": 6887936,
+    "active": 6887936,
+    "unique": 6887936,
+    "non_embedding": 4725248
+  },
+  "minutes": 3.0,
+  "steps": 269,
+  "tokens": 1101824,
+  "tok_per_sec": 6102,
+  "final_val_loss": 3.9802,
+  "peak_ram_mb": 1318,
+  "dtype": "bf16",
+  "threads": 6,
+  "batch": 16,
+  "lr": 0.001,
+  "schedule": "cosine",
+  "optim": "adamw",
+  "muon_lr": null
+}

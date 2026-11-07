@@ -1,0 +1,13 @@
+{"step": 0, "train_min": 0.0, "tokens_M": 0.0, "train_loss": null, "val_loss": 9.0431, "lr": 0.0, "tok_per_sec": 0, "peak_ram_mb": 727, "eta_min": 12.0}
+{"step": 68, "train_min": 1.004, "tokens_M": 0.279, "train_loss": 5.1988, "val_loss": 3.8169, "lr": 0.003, "tok_per_sec": 4626, "peak_ram_mb": 1351, "eta_min": 12.9}
+{"step": 134, "train_min": 2.007, "tokens_M": 0.549, "train_loss": 3.5737, "val_loss": 3.4035, "lr": 0.003, "tok_per_sec": 4557, "peak_ram_mb": 1363, "eta_min": 11.2}
+{"step": 215, "train_min": 3.009, "tokens_M": 0.881, "train_loss": 3.2564, "val_loss": 3.1626, "lr": 0.003, "tok_per_sec": 4878, "peak_ram_mb": 1383, "eta_min": 9.9}
+{"step": 282, "train_min": 4.01, "tokens_M": 1.155, "train_loss": 3.0789, "val_loss": 3.0325, "lr": 0.003, "tok_per_sec": 4801, "peak_ram_mb": 1383, "eta_min": 8.8}
+{"step": 350, "train_min": 5.013, "tokens_M": 1.434, "train_loss": 2.9495, "val_loss": 2.9318, "lr": 0.003, "tok_per_sec": 4766, "peak_ram_mb": 1383, "eta_min": 7.7}
+{"step": 418, "train_min": 6.002, "tokens_M": 1.712, "train_loss": 2.8551, "val_loss": 2.8457, "lr": 0.003, "tok_per_sec": 4754, "peak_ram_mb": 1383, "eta_min": 6.5}
+{"step": 494, "train_min": 7.004, "tokens_M": 2.023, "train_loss": 2.7893, "val_loss": 2.7745, "lr": 0.003, "tok_per_sec": 4815, "peak_ram_mb": 1397, "eta_min": 5.4}
+{"step": 572, "train_min": 8.004, "tokens_M": 2.343, "train_loss": 2.7398, "val_loss": 2.7159, "lr": 0.003, "tok_per_sec": 4879, "peak_ram_mb": 1397, "eta_min": 4.3}
+{"step": 650, "train_min": 9.012, "tokens_M": 2.662, "train_loss": 2.6666, "val_loss": 2.666, "lr": 0.002989, "tok_per_sec": 4924, "peak_ram_mb": 1397, "eta_min": 3.2}
+{"step": 728, "train_min": 10.006, "tokens_M": 2.982, "train_loss": 2.5801, "val_loss": 2.5775, "lr": 0.002094, "tok_per_sec": 4967, "peak_ram_mb": 1398, "eta_min": 2.2}
+{"step": 806, "train_min": 11.003, "tokens_M": 3.301, "train_loss": 2.5066, "val_loss": 2.4866, "lr": 0.001197, "tok_per_sec": 5001, "peak_ram_mb": 1415, "eta_min": 1.1}
+{"step": 884, "train_min": 12.0, "tokens_M": 3.621, "train_loss": 2.4181, "val_loss": 2.4195, "lr": 0.0003, "tok_per_sec": 5029, "peak_ram_mb": 1415, "eta_min": 0.0}
