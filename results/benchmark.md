@@ -1,6 +1,6 @@
 # Benchmark
 
-![benchmark](benchmark.jpg)
+![benchmark](curves.jpg)
 
 | Model | Train time | Final val loss | Time to reach baseline's final loss | Tokens/sec | Tokens seen | Params (total / active) | Peak RAM |
 |---|---|---|---|---|---|---|---|

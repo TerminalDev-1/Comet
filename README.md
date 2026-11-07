@@ -4,16 +4,20 @@ A faster-to-train Transformer variant, built and benchmarked on a laptop CPU (AM
 
 ![Comet benchmark](results/benchmark.jpg)
 
-## Latest result (Phase 3)
+## Results
 
-| Model | Train time | Final val loss | Time to reach 2.607 | Tokens seen |
+| Model | Train time | Final val loss | Next-token accuracy | Time to reach 2.607 |
 |---|---|---|---|---|
-| Baseline GPT | 25 min | 2.607 | 25.0 min | 9.1M |
-| **Comet v1** | **12 min** | **2.420** | **9.7 min (2.6× faster)** | **3.6M** |
+| Baseline GPT | 25 min | 2.607 | 45.2% | 25.0 min |
+| **Comet** (same-session run) | **12 min** | **2.453** | **47.3%** | **10.2 min (2.5×)** |
+| Comet (best run) | 12 min | 2.420 | 47.6% | 9.7 min (2.6×) |
 
 Same data (TinyStories), same tokenizer, same size (~6.5–6.9M parameters), same laptop.
-Comet beats the baseline's 25-minute score in under 10 minutes, while seeing 2.5× fewer tokens.
-Full numbers: [results/benchmark.md](results/benchmark.md) · details: [results/phase3.md](results/phase3.md).
+Full numbers: [results/benchmark.md](results/benchmark.md) · details: [results/phase3.md](results/phase3.md) · loss curves: [results/curves.jpg](results/curves.jpg).
+
+![Comet ablations](results/ablations.jpg)
+
+**Credit where it's due:** Comet's speed-up comes from combining published techniques (RoPE, QK-Norm, GQA, SwiGLU, the Muon optimizer, WSD schedule) and tuning them for a laptop CPU. Its own experimental parts (EMOE's shared expert pool, causal Mixture of Depths) are built and tested below, but don't beat the core yet. See [NEXT.md](NEXT.md) for the plan to change that.
 
 ## What's in Comet so far
 

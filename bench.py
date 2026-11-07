@@ -3,7 +3,7 @@
     python bench.py                       # default: baseline vs latest Comet race
     python bench.py --runs baseline_d256_l6 vt_v1_muon_12m
 
-Outputs results/benchmark.jpg and results/benchmark.md (shown in the README).
+Outputs results/curves.jpg (loss curves) and results/benchmark.md (table). Bar charts: charts.py.
 """
 import argparse
 import json
@@ -52,7 +52,7 @@ def first_time_reaching(log, target):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--runs", nargs="+", default=["baseline_d256_l6", "vt_v1_muon_12m"])
-    p.add_argument("--out", default=os.path.join(ROOT, "results", "benchmark.jpg"))
+    p.add_argument("--out", default=os.path.join(ROOT, "results", "curves.jpg"))
     p.add_argument("--md", default=os.path.join(ROOT, "results", "benchmark.md"))
     p.add_argument("--title", default="Comet vs. Baseline GPT")
     args = p.parse_args()

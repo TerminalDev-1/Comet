@@ -1,6 +1,6 @@
 # Comet — Plan
 
-**Status:** Phases 0–3 done. Comet v1 reaches the baseline's 25-minute loss in 9.7 minutes (2.6× faster).
+**Status:** Phases 0–3 done (Comet reaches baseline quality ~2.5× faster). EMOE, MTP, MoD built and tested. Next steps and honest assessment: `NEXT.md`.
 **Code name:** `comet`
 **Its Mixture of Experts design:** **EMOE** (Efficient Mixture of Experts)
 

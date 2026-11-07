@@ -27,5 +27,6 @@
   "lr": 0.001,
   "schedule": "cosine",
   "optim": "adamw",
-  "muon_lr": null
+  "muon_lr": null,
+  "final_val_acc": 0.2701
 }

@@ -33,5 +33,6 @@
   "lr": 0.002,
   "schedule": "wsd",
   "optim": "adamw",
-  "muon_lr": null
+  "muon_lr": null,
+  "final_val_acc": 0.3424
 }
