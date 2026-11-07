@@ -10,7 +10,7 @@ Build a Transformer variant that, compared with a standard Transformer on the sa
 
 1. **Trains faster:** reaches the same validation loss in less wall-clock time (target 1.5–3×).
 2. **Fits more parameters per GB of memory** (target 2–4×), by reusing parameters, sharing experts and cutting optimizer memory.
-3. **Runs on a PC:** small models that write English trained in minutes to under an hour. PC only; no Android target.
+3. **Runs on a PC in 20–30 minutes:** every training run fits a **hard 20–30 minute budget** (never hours). PC only; no Android target.
 
 Success is measured, not assumed: every idea gets tested against a plain baseline Transformer (see "How we prove it works").
 
@@ -23,7 +23,19 @@ Success is measured, not assumed: every idea gets tested against a plain baselin
 | RAM | 15 GB (shared with GPU) | Memory is the main limit, which is why "parameters per GB" is a core goal. |
 | Python | 3.13 | PyTorch must support 3.13 (current releases do). |
 
-Realistic scale: **dense models of 1–20M parameters**, and **EMOE models with several times more total parameters** for similar compute. Trained on **~50–500M tokens**.
+### Time budget math (estimates; Phase 0 measures the real numbers)
+- Training costs about **6 × active parameters** operations per token.
+- Expected CPU speed in PyTorch: ~200–500 billion operations per second.
+- So in a **25-minute run on the CPU**:
+
+| Active params | Tokens/sec (est.) | Tokens in 25 min |
+|---|---|---|
+| 30M | ~2–3k | ~4M (too few for good English) |
+| 10M | ~5–8k | ~8–12M |
+| 5M | ~10–15k | ~15–20M (enough for TinyStories-style English) |
+
+Realistic scale on the **CPU**: **~3–8M active parameters**, with **EMOE total parameters around 50–150M**, trained on **~10–20M tokens** per run.
+If the **Radeon 760M** works through DirectML, it could be several times faster, which raises all of these numbers. Testing it is the top priority of Phase 0.
 
 ---
 
@@ -160,26 +172,30 @@ Target: **roughly half the memory per parameter** of the baseline setup, before 
 
 ## Benchmark: the parameter ceiling challenge
 
-**Scenario:** on this laptop, a standard Transformer tops out at about **30M parameters** before training becomes impractical (too slow, or doesn't fit). Phase 2 measures the real ceiling.
+**Rule:** both models get the same **25-minute training budget** (20–30 min range).
 
-**Goal:** VTransformer (EMOE + MoD + loops + lean memory) trains **250M–500M total parameters** on the same laptop, at about the same cost per token as the 30M baseline.
+**Scenario:** within 25 minutes, a standard Transformer's useful ceiling is its best-performing size. On the CPU, that's expected to be **~5–10M parameters**. Bigger dense models see too few tokens to learn well. Phase 2 measures the real ceiling.
+
+**Goal:** in the same 25 minutes, VTransformer (EMOE + MoD + loops + lean memory) trains **~10–20× more total parameters** than the baseline's ceiling:
+- **CPU:** ~50–150M total parameters.
+- **Radeon GPU (if DirectML works):** aim for **250M+** total.
 
 **Why it's possible:**
-- **Compute** depends on *active* parameters per token, not total. EMOE keeps active parameters around the baseline's size (~20–30M), and MoD plus adaptive depth cut compute further.
-- **Memory** depends on *total* parameters. At ~8 bytes per parameter (Pillar 4a), 500M parameters is ~4 GB for weights, gradients and optimizer state, which fits in 15 GB with room for activations.
+- **Compute** depends on *active* parameters per token, not total. EMOE keeps active parameters at the baseline's size, and MoD plus adaptive depth cut compute further.
+- **Memory** depends on *total* parameters. At ~8 bytes per parameter (Pillar 4a), even 500M parameters is ~4 GB, so memory is not the limit. Time is.
 
 **Caveats:**
-- A 500M EMOE model is not as smart as a 500M dense model. A rough rule of thumb puts an MoE between its active and total size (around the geometric mean, so ~120M dense-equivalent for 30M active / 500M total). It should still clearly beat the 30M baseline.
-- More experts need more training tokens before all of them learn something useful, so this benchmark uses longer runs.
+- An EMOE model is not as smart as a dense model of the same total size. A rough rule of thumb puts an MoE around the geometric mean of its active and total size.
+- Each expert only sees a slice of the data. Within 25 minutes, too many experts means undertrained experts, so we tune total size to what the time budget can actually train, not just what fits in memory.
 
-**Scoreboard (same laptop, same time budget):**
+**Scoreboard (same laptop, 25 minutes each):**
 
 | Model | Total params | Active per token | Peak RAM | Val loss | Tokens/sec |
 |---|---|---|---|---|---|
-| Baseline Transformer | ~30M (ceiling) | ~30M | measure | measure | measure |
-| VTransformer + EMOE + MoD | **250M–500M** | ~20–30M | measure | measure | measure |
+| Baseline Transformer | ~5–10M (ceiling) | same | measure | measure | measure |
+| VTransformer + EMOE + MoD | **~50–150M (CPU), 250M+ (GPU)** | ~baseline | measure | measure | measure |
 
-Win condition: VTransformer fits 250M+ total parameters **and** gets a lower validation loss than the baseline in the same training time.
+Win condition: VTransformer trains 10×+ more total parameters **and** gets a lower validation loss than the baseline in the same 25 minutes.
 
 ---
 
@@ -189,6 +205,7 @@ Every claim gets checked against a **baseline**: a plain GPT-style Transformer (
 
 **Fair comparison rules:**
 - Same data, same tokenizer.
+- Every run is **20–30 minutes** (default 25).
 - Compare at **equal training time** and at **equal memory**.
 
 **What we measure:**
@@ -250,8 +267,8 @@ VTransformer/
 - Download TinyStories, run dedup + quality filters, train an 8k BPE tokenizer, write `train.bin` / `val.bin`.
 
 ### Phase 2: Baseline
-- Plain GPT baseline (~10M params). Train for 30 minutes and record loss and memory. This is the number to beat.
-- Find the baseline's real parameter ceiling on this laptop (expected ~30M).
+- Plain GPT baseline. Train for 25 minutes and record loss and memory. This is the number to beat.
+- Find the baseline's real ceiling: the size that gets the best loss in 25 minutes (expected ~5–10M on the CPU).
 
 ### Phase 3: VTransformer v1 (core)
 - RoPE + QK-Norm + GQA + fused attention + tied embeddings + BF16 + WSD schedule.
@@ -276,7 +293,7 @@ VTransformer/
 
 ### Phase 9: Results
 - Final head-to-head: baseline vs. normal MoE vs. VTransformer + EMOE + MoD. Charts and a write-up of what worked and what didn't.
-- Run the **parameter ceiling challenge** (30M baseline vs. 250M–500M VTransformer).
+- Run the **parameter ceiling challenge** (baseline ceiling vs. VTransformer, 25 minutes each).
 
 ### Phase 10 (optional): Scale up
 - Best config on FineWeb-Edu, at the biggest size this PC can handle.
@@ -290,10 +307,10 @@ VTransformer/
 
 | Metric | Baseline | VTransformer goal |
 |---|---|---|
-| Time to reach baseline's final val loss | 30 min | **≤ 15 min** |
+| Time to reach baseline's final val loss | 25 min | **≤ 12 min** |
 | Memory per parameter during training | ~16 bytes | **~8 bytes** |
 | Total parameters that fit in the same RAM | 1× | **2–4×** (reuse + EMOE + lean optimizer) |
-| Trainable total parameters on this laptop | ~30M | **250M–500M** (EMOE + MoD) |
+| Total parameters trained in 25 min | ~5–10M | **~50–150M CPU, 250M+ GPU** (EMOE + MoD) |
 | Average loops per token (adaptive depth) | — | **well below max** |
 | Unique parameters for same depth (dense) | 1× | **~0.35×** |
 
@@ -309,4 +326,5 @@ VTransformer/
 
 - **Name:** VTransformer (no hyphens or spaces). Was "$Transformer" / "STransformer".
 - **MoE design name:** EMOE (Efficient Mixture of Experts). Was "SMOE".
+- **Time budget:** every training run is 20–30 minutes (default 25). Never hours.
 - **PC only.** Everything runs on the PC. No Android export or phone target unless it becomes absolutely necessary.
