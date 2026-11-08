@@ -64,6 +64,8 @@ SETUPS = {
     "dense": [],
     "mod_exact": ["mod=true", "mod_bucket=0"],
     "mod": ["mod=true"],
+    "mod_b32": ["mod=true", "mod_bucket=32"],
+    "mod_b16": ["mod=true", "mod_bucket=16"],
 }
 
 

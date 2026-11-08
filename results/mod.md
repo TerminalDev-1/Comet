@@ -82,3 +82,16 @@ The fragmentation was also slowing MoD down; with the fix it's faster than befor
 - The clean benchmark (`membench`) showed bucketed MoD as *faster*, because its random-token routing and lack of eval pauses differ from real training. Lesson: confirm speed claims on real 12-minute runs.
 
 **Decision:** keep the RAM fix, keep MoD **off by default**. MoD is not a lever toward the 5× goal at this model size. Possible later retry: bucket 16 or 32 (less padding, still few shapes) at longer contexts, where skipped attention work is worth more.
+
+### Bucket 16 (12 minutes, `race12s2_mod_b16`, same session as `race12s2_dense`, ~1 hour later)
+
+| Model | Final val loss | Accuracy | Tokens/sec | Tokens seen | Reached 2.607 at | Peak RAM |
+|---|---|---|---|---|---|---|
+| **Dense Comet** | **2.441** | **47.3%** | 4,658 | 3.35M | **9.8 min** | 1.40 GB |
+| MoD, bucket 64 | 2.475 | 47.0% | 5,169 (+11%) | 3.72M | 10.3 min | 1.49 GB |
+| MoD, bucket 16 | 2.473 | 46.9% | 5,399 (+16%) | 3.89M | 10.3 min | 1.49 GB |
+
+- Less padding raised MoD's speed-up from +11% to +16%, and RAM stayed flat (1.49 GB, no creep over 12 minutes).
+- **The loss barely moved (2.473 vs 2.475), and dense still wins by 0.03.** So padding wasn't what held MoD back. The limit is that skipped tokens learn less, and +16% more tokens doesn't make up for it at this model size.
+
+**Final decision for now:** MoD stays off by default. The default is now `mod_bucket=16`, the fastest setting that still keeps RAM flat, for anyone who turns MoD on. Don't spend more time on MoD at context 256 / 6.5M parameters; revisit only for longer contexts or bigger models.

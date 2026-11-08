@@ -50,7 +50,7 @@ class CometConfig:
     mod_capacity: float = 0.5  # target fraction of tokens processed in MoD layers
     mod_every: int = 2  # MoD on every 2nd layer (1, 3, 5)
     mod_aux_weight: float = 0.1  # weight of the router's side loss
-    mod_bucket: int = 64  # round the processed-token count up to a multiple of this (0 = exact).
+    mod_bucket: int = 16  # round the processed-token count up to a multiple of this (0 = exact).
     # Exact counts change every step, which fragments the CPU heap: peak RAM crept from 1.2 to 2.3 GB.
     # Fixed bucket sizes keep RAM flat at the dense level (tools/membench.py).
 

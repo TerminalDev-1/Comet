@@ -12,7 +12,7 @@ Read this first tomorrow. Full detail lives in [plan.md](plan.md) and the `resul
 | Phase 3 Comet v1 | ✅ **Reaches baseline quality in ~10 min (2.5×)**; 12 min → 2.42–2.45, 47.3–47.6% |
 | EMOE | ✅ built + tuned (91% of dense speed, 2.6× params). ❌ doesn't beat dense in 3 min |
 | Multi-token prediction | ✅ built (full + light). ❌ doesn't beat dense in 3 min |
-| Mixture of Depths | ✅ built, RAM fixed (2026-11-08: 1.49 GB vs 2.36). ❌ loses at 12 min (2.475 vs 2.441), +11% tokens/sec. Off by default |
+| Mixture of Depths | ✅ built, RAM fixed (2026-11-08: 1.49 GB vs 2.36). ❌ loses at 12 min (bucket 64: 2.475, bucket 16: 2.473, dense 2.441). Off by default; done with MoD at this size |
 | Looped blocks + adaptive depth | ⏳ not started |
 | Reusable package (Phase 11) | ⏳ not started |
 | Save to global CLAUDE.md (Phase 12) | ⏳ after the architecture is final |
