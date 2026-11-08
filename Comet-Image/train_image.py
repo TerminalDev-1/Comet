@@ -59,8 +59,11 @@ def main():
     dev = torch.device("cuda")
     out = os.path.join(a.out, a.name)
     os.makedirs(out, exist_ok=True)
-    data = torch.from_numpy(np.load(a.data)).to(dev)  # uint8 (N,H,W,3), lives on the GPU
+    data = torch.from_numpy(np.load(a.data))  # uint8 (N,H,W,3)
+    on_gpu = data.numel() < 1.2e9  # small sets live on the GPU; big ones stay in RAM, batches get copied over
+    data = data.to(dev) if on_gpu else data.pin_memory()
     N, H = data.shape[0], data.shape[1]
+    print(f"data on {'GPU' if on_gpu else 'CPU RAM (pinned)'}: {data.numel() / 2**30:.1f} GB", flush=True)
     model = DiT(img=H, patch=a.patch, d=a.d, layers=a.layers, heads=a.heads).to(dev)
     if a.init:
         state = torch.load(a.init, map_location=dev)["state"]
@@ -75,15 +78,17 @@ def main():
     weights = None
     if a.color_boost > 0:  # colorfulness (saturation) + detail (edge strength), each scaled 0..1
         sc = []
-        for i in range(0, N, 4096):
-            c = data[i:i + 4096].float() / 255
+        for i in range(0, N, 1024):
+            c = data[i:i + 1024].to(dev).float() / 255
             sat = (c.max(-1).values - c.min(-1).values).mean((1, 2))
             g = c.mean(-1)
             edge = (g[:, 1:, :] - g[:, :-1, :]).abs().mean((1, 2)) + (g[:, :, 1:] - g[:, :, :-1]).abs().mean((1, 2))
             sc.append(torch.stack([sat, edge], 1))
         sc = torch.cat(sc)
         sc = (sc - sc.min(0).values) / (sc.max(0).values - sc.min(0).values + 1e-6)
-        weights = 1 + a.color_boost * sc.mean(1)
+        weights = (1 + a.color_boost * sc.mean(1)).to(dev)
+        del c, sc
+        torch.cuda.empty_cache()
         print(f"color/detail sampling on: weights {weights.min():.2f}..{weights.max():.2f}", flush=True)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     params = sum(p.numel() for p in model.parameters())
@@ -100,7 +105,8 @@ def main():
         for g in opt.param_groups:
             g["lr"] = lr
         idx = torch.multinomial(weights, a.batch, replacement=True) if weights is not None else             torch.randint(0, N, (a.batch,), device=dev)
-        x = data[idx].permute(0, 3, 1, 2).float() / 127.5 - 1
+        xb = data[idx] if on_gpu else data[idx.cpu()].to(dev, non_blocking=True)
+        x = xb.permute(0, 3, 1, 2).float() / 127.5 - 1
         flip = torch.rand(a.batch, device=dev) < 0.5  # mirror half the batch: more variety
         x = torch.where(flip[:, None, None, None], x.flip(3), x)
         with torch.autocast("cuda", dtype=torch.bfloat16):
@@ -136,12 +142,12 @@ def main():
     best = torch.full((16,), float("inf"), device=dev)
     arg = torch.zeros(16, dtype=torch.long, device=dev)
     for i in range(0, N, 8192):
-        chunk = data[i:i + 8192].float().flatten(1)
+        chunk = data[i:i + 8192].to(dev).float().flatten(1)
         dist = torch.cdist(s, chunk)
         m, j = dist.min(1)
         upd = m < best
         best, arg = torch.where(upd, m, best), torch.where(upd, j + i, arg)
-    pairs = np.concatenate([np.stack([final[k], data[arg[k]].cpu().numpy()]) for k in range(16)])
+    pairs = np.concatenate([np.stack([final[k], data[int(arg[k])].cpu().numpy()]) for k in range(16)])
     save_grid(pairs, os.path.join(out, "nearest_pairs.png"), cols=8)
     rms = (best / (H * H * 3) ** 0.5).cpu().numpy()
     torch.save({"config": vars(a), "img": H, "state": ema.state_dict()}, os.path.join(out, "ema.pt"))
