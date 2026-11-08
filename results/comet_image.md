@@ -1,8 +1,12 @@
-# Comet-Image-Preview-2026-11-08
+# Comet-Image-Preview-2026-11-08 (and v2)
+
+![Comet-Image-Preview-v2 samples](comet_image_v2_grid.png)
+
+*64 images generated from pure noise by **Comet-Image-Preview-v2-2026-11-08** (shown at 2× size). None of them is a real screenshot; see the copy check below.*
 
 The first **image model** in the Comet family: a small **Diffusion Transformer (DiT)** trained with flow matching (the Stable Diffusion 3 recipe) on Talmeez's own screenshots, on the RTX 4060 Ti over SSH.
 
-*The screenshots, the sample grids and the weights are private: they stay out of this repo (in `private/` locally, `~/comet_private` on the PC).*
+*The screenshots, the training crops, the copy-check images and the weights are private: they stay out of this repo (in `private/` locally, `~/comet_private` on the PC).*
 
 ## Setup
 
@@ -27,6 +31,12 @@ Progress across grids (min 4 → 8 → 12 → 16 → 20): static with the right 
 ## Copy check
 
 For 16 samples, the nearest of all 87k training crops (pixel distance) was found and compared side by side. The nearest real crops have readable UI text and sharp edges; the generated ones don't match any of them. Very small distances (10–12) only happen for near-blank tiles (all dark or all white). **The model makes new screenshot-like images; it isn't copying training images.**
+
+## v2: 20 more minutes (Comet-Image-Preview-v2-2026-11-08)
+
+Continued from v1's weights for another 20 minutes (lr 2e-4), with 8 new screenshots added (87,450 crops). Loss **0.053 → 0.046**. Compared with v1: crisper text pages (evenly spaced lines, indents, bold headings, blue link lines), smoother gradients (blue and gray backgrounds no longer blocky), and fewer chaotic mosaics. Busy photo-like crops are still the weak spot.
+
+**Copy check (v2):** the closest matches (pixel distance 3–13) are all near-black tiles next to other near-black tiles (an empty dark screen next to an empty dark screen). Every tile with content differs clearly from its nearest real crop. It still makes new images rather than copying.
 
 ## Next ideas
 
