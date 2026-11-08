@@ -18,7 +18,7 @@ Write-ups: [Comet-LM/README.md](Comet-LM/README.md) (v1), [Comet-LM/results/come
 ## How the hub works
 
 - **One folder per model line.** New Comet models (a classifier, a tiny specialist, a looped Transformer...) get their own folder: `Comet-<Name>/`.
-- **Naming:** experimental models are `Comet-<Variant>-YYYY-MM-DD`, e.g. `Comet-Image-v4-Preview-2026-11-08`. **Preview** = the first training pass is released, then the model keeps training until it's right. Discontinued models are marked 🗄️ Legacy.
+- **Naming:** experimental models are `Comet-<Variant>-YYYY-MM-DD`, e.g. `Comet-Preview-2026-11-08` or `Comet-Image-v4-Flash-2026-11-08`. **Preview** = the first training pass is released, then the model keeps training until it's right. Discontinued models are marked 🗄️ Legacy.
 - **Training hardware:** an RTX 4060 Ti PC, controlled from the laptop over SSH, so nobody has to sit at it. Setup: [SSH_SETUP.md](SSH_SETUP.md) and [pc_setup.ps1](pc_setup.ps1).
 - **One shared Python environment** at `Comet/.venv` (not in git).
 - **Private data stays private:** anything made from personal files (screenshots, crops, weights trained on them) lives in a `private/` folder that git ignores.
