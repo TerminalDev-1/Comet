@@ -20,12 +20,49 @@ from tokenizers import Tokenizer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-TRAIN_NAMES = ["Tom", "Sue", "Lily", "Ben", "Mia", "Max", "Anna", "Sam", "Tim", "Lucy", "Jack", "Emma",
-               "Leo", "Zoe", "Mark", "Amy", "Jane", "Bob", "Kate", "Sara"]
+REAL_NAMES = """Tom Sue Lily Ben Mia Max Anna Sam Tim Lucy Jack Emma Leo Zoe Mark Amy Jane Bob Kate Sara Adam Alice Andy
+Bella Billy Carl Chloe Daisy David Eddie Ella Emily Eric Eva Fred Grace Greg Hannah Harry Henry Holly Jenny Jill Joe
+John Josh Julia Kevin Kim Kyle Laura Liam Lisa Luke Mary Matt Megan Mike Nina Noah Nora Oscar Paul Peter Polly Rachel
+Ray Rita Rob Rose Ryan Sally Sophie Steve Susan Ted Tina Toby Tony Victor Will Wendy Abby Alex Annie Beth Brian Carla
+Charlie Cindy Danny Dora Ellie Felix Fiona Frank Gina George Hugo Iris Jason Jess Judy Karen Kelly Lara Leah Lena
+Lewis Lola Lou Maria Martin Nancy Ned Nick Olivia Owen Pam Pete Ricky Sean Simon Stella Ted Tara Tess Vera Wally Zack
+Amber Arthur Betty Clara Colin Dean Elsa Gary Gus Hazel Ian Jade Joy June Kai Lucas Maya Mila Nate Neil Otto Penny""".split()
+SYL = ["ba", "bi", "bo", "da", "di", "do", "fa", "fi", "ga", "go", "ka", "ki", "ko", "la", "li", "lo", "ma", "mi",
+       "mo", "na", "ni", "no", "pa", "pi", "po", "ra", "ri", "ro", "sa", "si", "so", "ta", "ti", "to", "va", "vi", "za",
+       "zo", "bel", "dan", "fen", "gil", "jon", "kel", "lin", "mar", "nel", "pim", "ral", "sim", "tam", "vin", "wil"]
 TEST_NAMES = ["Ollie", "Ruby", "Finn", "Ivy", "Rosie", "Jake", "Molly", "Dan"]
-TRAIN_THINGS = ["ball", "doll", "apple", "book", "kite", "hat", "cookie", "cup", "teddy bear", "toy car"]
+
+
+def made_up_name(r):
+    n = "".join(r.choice(SYL) for _ in range(r.choice([2, 2, 3])))
+    return n.capitalize()
+
+
+class Names(list):
+    """Real names plus a fresh made-up name about half the time, so memorizing names can't work."""
+
+    def __init__(self, real, r):
+        super().__init__(real)
+        self.r = r
+
+    def pick(self, k):
+        out = []
+        while len(out) < k:
+            n = made_up_name(self.r) if self.r.random() < 0.5 else self.r.choice(self)
+            if n not in out and n not in TEST_NAMES:
+                out.append(n)
+        return out
+
+
+TRAIN_NAMES = [n for n in dict.fromkeys(REAL_NAMES) if n not in TEST_NAMES]
+TEST_NAMES = ["Ollie", "Ruby", "Finn", "Ivy", "Rosie", "Jake", "Molly", "Dan"]
+TRAIN_THINGS = """ball doll apple book kite hat cookie cup car truck block crown flower ring key coin stick stone
+leaf feather boat train drum bell box_of_crayons pencil rope bone carrot cake pie candy toy_robot puzzle scarf glove
+shoe button marble wand card letter cap blanket pillow plate bowl jar brush comb mirror lamp clock map flag star
+cherry pear orange lemon egg""".replace("_", " ").split()
 TEST_THINGS = ["shell", "crayon", "banana", "spoon", "balloon", "sock"]
-TRAIN_PLACES = ["box", "bag", "basket", "drawer", "car", "tree"]
+TRAIN_PLACES = """box bag basket drawer car tree closet cupboard sink bath barn shed garden kitchen bed chair nest
+cave boat truck house hole pond yard attic shelf oven fridge wagon tub""".split()
 TEST_PLACES = ["bucket", "pocket", "tent"]
 ANIMALS = [("dog", "barked", "bark"), ("cat", "meowed", "meow"), ("bird", "sang", "sing"), ("fish", "swam", "swim"),
            ("duck", "quacked", "quack"), ("cow", "mooed", "moo")]
@@ -45,7 +82,7 @@ def pro(name):
 
 
 def ex_give(r, N, T, P):
-    a, b = r.sample(N, 2)
+    a, b = N.pick(2)
     t = r.choice(T)
     story = f"{a} had a {t}. {a} gave the {t} to {b}."
     think = f"{a} had the {t}. {a} gave the {t} to {b}. So {b} has the {t} now."
@@ -53,7 +90,7 @@ def ex_give(r, N, T, P):
 
 
 def ex_give2(r, N, T, P):
-    a, b, c = r.sample(N, 3)
+    a, b, c = N.pick(3)
     t = r.choice(T)
     story = f"{a} had a {t}. {a} gave the {t} to {b}. Then {b} gave the {t} to {c}."
     think = f"{a} had the {t}. {a} gave it to {b}. Then {b} gave it to {c}. So {c} has the {t} now."
@@ -61,7 +98,7 @@ def ex_give2(r, N, T, P):
 
 
 def ex_place(r, N, T, P):
-    a = r.choice(N)
+    a = N.pick(1)[0]
     t1, t2 = r.sample(T, 2)
     p1, p2 = r.sample(P, 2)
     story = f"{a} put the {t1} in the {p1} and the {t2} in the {p2}."
@@ -71,7 +108,7 @@ def ex_place(r, N, T, P):
 
 
 def ex_move(r, N, T, P):
-    a, b = r.sample(N, 2)
+    a, b = N.pick(2)
     t = r.choice(T)
     p1, p2 = r.sample(P, 2)
     story = f"{a} put the {t} in the {p1}. Later, {b} moved the {t} to the {p2}."
@@ -80,7 +117,7 @@ def ex_move(r, N, T, P):
 
 
 def ex_count(r, N, T, P):
-    a = r.choice(N)
+    a = N.pick(1)[0]
     t = r.choice(T)
     n = r.randint(2, 9)
     if r.random() < 0.5:
@@ -97,7 +134,7 @@ def ex_count(r, N, T, P):
 
 
 def ex_animal(r, N, T, P):
-    a, b = r.sample(N, 2)
+    a, b = N.pick(2)
     an, verb, can = r.choice(ANIMALS)
     pe = r.choice(PEOPLE)
     story = f"{a} is a {an} and {b} is a {pe}. One of them {verb}." if r.random() < 0.5 else         f"{b} is a {pe} and {a} is a {an}. One of them {verb}."
@@ -106,7 +143,7 @@ def ex_animal(r, N, T, P):
 
 
 def ex_compare(r, N, T, P):
-    a, b = r.sample(N, 2)
+    a, b = N.pick(2)
     big, small = r.choice([("taller", "shorter"), ("bigger", "smaller"), ("older", "younger"), ("faster", "slower")])
     story = f"{a} is {big} than {b}."
     if r.random() < 0.5:
@@ -117,7 +154,7 @@ def ex_compare(r, N, T, P):
 
 
 def ex_feel(r, N, T, P):
-    a = r.choice(N)
+    a = N.pick(1)[0]
     t = r.choice(T)
     ev, rule, f = r.choice(FEEL)
     story = f"{a} {ev.format(p=pro(a), t=t)}."
@@ -135,6 +172,9 @@ def render(story, q, think, ans, with_answer=True):
 
 def make(n, seed, names, things, places):
     r = random.Random(seed)
+    names = Names(names, r) if names is not TEST_NAMES else Names(names, r)
+    if names[0] in TEST_NAMES:  # test set: only the held-out real names, no made-up ones
+        names.pick = lambda k: r.sample(TEST_NAMES, k)
     out = []
     for i in range(n):
         kind = KINDS[i % len(KINDS)]
