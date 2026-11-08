@@ -1,0 +1,51 @@
+
+Ivy had a balloon. Ivy gave the balloon to Rosie.
+Question: Who has the balloon?
+<think>Jack had the balloon. Jack gave the balloon to Rosie. So Rosie has the balloon now.</think>
+Answer: Rosie
+   RIGHT (expected: Rosie)
+
+Finn had a spoon. Finn gave the spoon to Dan. Then Dan gave the spoon to Rosie.
+Question: Who has the spoon?
+<think>Zoe had the spoon. Zoe gave it to Dan. Then Dan gave it to Rosie. So Rosie has the spoon now.</think>
+Answer: Rosie
+   RIGHT (expected: Rosie)
+
+Ruby put the balloon in the pocket and the shell in the tent.
+Question: Where is the shell?
+<think>First the shell was in the bag. Then Sara moved it to the basket. So the shell is in the basket now.</think>
+Answer: in the basket
+   WRONG (expected: in the tent)
+
+Ivy put the spoon in the tent. Later, Jake moved the spoon to the pocket.
+Question: Where is the spoon?
+<think>First the spoon was in the tent. Then Jake moved it to the drawer. So the spoon is in the drawer now.</think>
+Answer: in the drawer
+   WRONG (expected: in the pocket)
+
+Molly had four socks. Molly gave one socks to a friend.
+Question: How many socks does Molly have now?
+<think>Molly had four socks. Molly gave away one. Four take away one is three.</think>
+Answer: three
+   RIGHT (expected: three)
+
+Molly is a dog and Jake is a girl. One of them barked.
+Question: Who barked?
+<think>A dog can bark. A girl cannot bark. Molly is the dog. So Molly barked.</think>
+Answer: Molly
+   RIGHT (expected: Molly)
+
+Ollie is taller than Finn.
+Question: Who is taller?
+<think>Zoe is taller than Ben. So Zoe is the taller one.</think>
+Answer: Zoe
+   WRONG (expected: Ollie)
+
+Rosie won the race at school.
+Question: How did Rosie feel?
+<think>Winning makes you proud. Rosie won the race at school. So Rosie felt proud.</think>
+Answer: proud
+   RIGHT (expected: proud)
+
+Held-out reasoning accuracy: 202/400 = 50.5%
+  give 24/50  give2 23/50  place 7/50  move 42/50  count 39/50  animal 10/50  compare 10/50  feel 47/50
