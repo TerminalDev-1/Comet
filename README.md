@@ -12,7 +12,7 @@
 |---|---|---|---|
 | **Comet v1** (sunset) | [Comet-LM/](Comet-LM/) | Efficient Transformer trained on a laptop CPU | Baseline GPT quality **2.55× faster** (9.8 vs 25 min) |
 | **Comet-Preview** | [Comet-LM/](Comet-LM/) | 15.7M language model that **thinks in English** in `<think>` tags | **68%** on held-out story reasoning (v2), 13 min of GPU training |
-| **Comet-Image-Preview** | [Comet-Image/](Comet-Image/) | 22M Diffusion Transformer trained on screenshots | New screenshot-like images, no copying (v2, 40 min total) |
+| **Comet-Image-Preview** | [Comet-Image/](Comet-Image/) | 22M Diffusion Transformer trained on screenshots | v3: **128×128**, sharper and more colorful; new images, no copying (60 min total) |
 
 Write-ups: [Comet-LM/README.md](Comet-LM/README.md) (v1), [Comet-LM/results/comet_preview.md](Comet-LM/results/comet_preview.md), [Comet-Image/README.md](Comet-Image/README.md).
 

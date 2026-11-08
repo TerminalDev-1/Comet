@@ -40,6 +40,26 @@ Continued from v1's weights for another 20 minutes (lr 2e-4), with 8 new screens
 
 **Copy check (v2):** the closest matches (pixel distance 3–13) are all near-black tiles next to other near-black tiles (an empty dark screen next to an empty dark screen). Every tile with content differs clearly from its nearest real crop. It still makes new images rather than copying.
 
+## v3: 128×128, sharper and more colorful (Comet-Image-Preview-v3-2026-11-08)
+
+![Comet-Image-Preview-v3 samples](results/comet_image_v3_grid.png)
+
+Continued from v2, but at **128×128** (4× the pixels): v2's 16×16 position map was stretched to 32×32 so its weights carry over. Two training-recipe changes:
+- `--t_shift 0.5`: more practice on nearly-clean images, where fine detail is learned
+- `--color_boost 2`: colorful and detailed crops are picked up to ~2.3× more often
+
+Data: 45,050 crops at 128×128 (kept in RAM; only batches go to the GPU). Batch 32 (batch 64 needed 10 GB and overflowed the 8 GB card), lr 1e-4, 20 min, 4,602 steps, 123 images/sec, 5.4 GB VRAM. Loss 0.055 → **0.048**.
+
+![v2 vs v3, same seeds](results/v2_vs_v3.png)
+
+*Left: v2 (64×64, upscaled). Right: v3 (128×128). Same seeds.*
+
+- ✅ **Less blurry:** text lines are crisp and word-shaped instead of a soft smear.
+- ✅ **More color:** cyan, blue, orange, yellow and green accents show up far more often.
+- ⚠️ **Messier layouts:** more collage-like compositions and noise in dark areas. 22M parameters now fill 4× the pixels with only 20 minutes of practice at this size.
+
+**Copy check (v3):** nearest-real distances 22–86 (higher than v2's), and every sample clearly differs from its nearest training crop.
+
 ## Usage (on the GPU PC, from `Comet-Image/`)
 
 ```
