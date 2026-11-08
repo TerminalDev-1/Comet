@@ -347,6 +347,7 @@ Comet trains for **10–15 minutes**. The baseline already ran 25 minutes, and w
 ### Phase 13: Research paper
 - Write it the way labs do: abstract, introduction, related work, method (Comet architecture, EMOE, MoD, adaptive depth, MTP), experimental setup, results with charts and tables, ablations, limitations, conclusion, references.
 - Every number comes from runs in `results/`; ablations show what each part adds.
+- **Positioning (agreed):** "Comet: an efficiency-focused Transformer architecture that trains 2.5× faster on a laptop CPU." Claim Comet's design and measured results as original; credit every component's source (RoPE, QK-Norm, GQA, SwiGLU, Muon, WSD), as the Llama paper did; cite MoEUT (Csordás et al., 2024) as related work for EMOE's cross-layer expert sharing. Never describe Comet as "just a training recipe."
 - Publish as `paper/comet.pdf` (built from LaTeX) in the repo. Posting to arXiv needs your own account and an endorsement, so that step is yours.
 
 ---

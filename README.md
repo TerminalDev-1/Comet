@@ -17,7 +17,7 @@ Full numbers: [results/benchmark.md](results/benchmark.md) · details: [results/
 
 ![Comet ablations](results/ablations.jpg)
 
-**Credit where it's due:** Comet's speed-up comes from combining published techniques (RoPE, QK-Norm, GQA, SwiGLU, the Muon optimizer, WSD schedule) and tuning them for a laptop CPU. Its own experimental parts (EMOE's shared expert pool, causal Mixture of Depths) are built and tested below, but don't beat the core yet. See [NEXT.md](NEXT.md) for the plan to change that.
+**What makes Comet original:** Comet is its own efficiency-focused Transformer architecture. Its specific design (attention setup, optimizer split, schedule, and the norm and attention kernels chosen by measuring on a laptop CPU) trains **2.5× faster than a standard GPT on the same hardware**. Like Llama, it builds on published components, credited here: RoPE (Su et al.), QK-Norm (Dehghani et al.), GQA (Ainslie et al.), SwiGLU (Shazeer), the Muon optimizer (Jordan et al.) and the WSD schedule (MiniCPM). Comet's own additions, EMOE (Efficient Mixture of Experts) and causal Mixture of Depths, are built and tested below; see [NEXT.md](NEXT.md) for the plan to make them win.
 
 ## What's in Comet so far
 

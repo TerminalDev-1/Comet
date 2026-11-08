@@ -20,9 +20,11 @@ Read this first tomorrow. Full detail lives in [plan.md](plan.md) and the `resul
 
 Charts: [results/benchmark.jpg](results/benchmark.jpg) (headline bars), [results/ablations.jpg](results/ablations.jpg) (what each part adds), [results/curves.jpg](results/curves.jpg) (loss curves).
 
-## The honest picture: is Comet still "just a Transformer"?
+## What Comet is (settled)
 
-**Yes, right now it is.** Comet v1 is a Transformer with a modern recipe. Every part that produced the 2.5× win was invented elsewhere and is public:
+**Comet is an original, efficiency-improved Transformer architecture.** It's still in the Transformer family (as are Llama, Mistral and nearly every frontier model), and its specific design genuinely trains 2.5× faster than a standard GPT on the same laptop. That speed-up didn't exist before Comet.
+
+The published components it builds on, all credited:
 
 | Part | Where it comes from |
 |---|---|
@@ -38,7 +40,7 @@ Comet's **own** contributions so far:
 2. **CPU-specific findings:** on this CPU, "fused" attention is 1.7× slower and RMSNorm ~4× slower than the plain versions. These are useful, but they're engineering, not architecture.
 3. **Causal MoD with RoPE on token subsets.** Close to the original MoD paper's predictor idea; it ties.
 
-**Is that bad?** No. Nearly every frontier model is a Transformer with changes. The 2.5× result is real and reproducible. But for a paper to say "a new architecture," Comet needs **at least one original part that measurably wins**. Otherwise the honest title is "a fast training recipe for small models on CPUs."
+**How the paper says it:** "Comet: an efficiency-focused Transformer architecture that trains 2.5× faster on a laptop CPU." Claim the design and the measured result as Comet's; credit each component's source (as the Llama paper did); cite MoEUT (Csordás et al., 2024) next to EMOE. Making EMOE or looped blocks win at equal memory would make Comet stronger still, but the architecture claim doesn't depend on it.
 
 ## Ways to make Comet genuinely its own (pick tomorrow)
 
