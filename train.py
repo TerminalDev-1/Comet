@@ -52,6 +52,7 @@ def get_args():
     p.add_argument("--grad_clip", type=float, default=1.0)
     p.add_argument("--threads", type=int, default=6)
     p.add_argument("--device", default="cpu", help="cpu or cuda")
+    p.add_argument("--reason", action="store_true", help="run the story reasoning test (reason.py) at every eval")
     p.add_argument("--dtype", default="bf16", choices=["bf16", "fp32"])
     p.add_argument("--eval_every_sec", type=float, default=60)
     p.add_argument("--eval_batches", type=int, default=20)
@@ -169,6 +170,12 @@ def main():
     val = Data("val", cfg.ctx, args.batch, 0)
     val_batches = [tuple(t.to(dev) for t in val.get()) for _ in range(args.eval_batches)]  # fixed val set
 
+    tok = None
+    if args.reason:
+        from tokenizers import Tokenizer
+        import reason
+        tok = Tokenizer.from_file(os.path.join(ROOT, "data", "tokenizer.json"))
+
     out_dir = os.path.join(ROOT, "results", "runs", args.name)
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(os.path.join(ROOT, "checkpoints"), exist_ok=True)
@@ -196,9 +203,15 @@ def main():
     while True:
         if train_time >= next_eval or train_time >= budget:
             vl, va = evaluate(model, val_batches, autocast)
+            racc = None
+            if tok is not None:
+                racc, rcats = reason.score(model, tok, dev)
+                for prompt, ans in reason.watch(model, tok, dev):
+                    print(f"  WATCH {prompt} -> {ans}", flush=True)
+                print(f"  REASON {racc * 100:.0f}% {rcats}", flush=True)
             log({"step": step, "train_min": round(train_time / 60, 3), "tokens_M": round(tokens / 1e6, 3),
                  "train_loss": round(float(np.mean(recent)), 4) if recent else None,
-                 "val_loss": round(vl, 4), "val_acc": round(va, 4), "lr": round(lr_at(min(1, train_time / budget), args), 6),
+                 "val_loss": round(vl, 4), "val_acc": round(va, 4), "reason_acc": round(racc, 3) if racc is not None else None, "lr": round(lr_at(min(1, train_time / budget), args), 6),
                  "tok_per_sec": round(tokens / train_time) if train_time else 0, "peak_ram_mb": peak_ram_mb(), "peak_vram_mb": peak_vram_mb(),
                  "eta_min": round(max(0.0, budget - train_time) / 60 * wall_per_train(), 1),
                  "mod_frac": round(model.mod_frac, 3) if getattr(model, "mod_frac", None) is not None else None})
@@ -227,11 +240,12 @@ def main():
         tokens += x.numel()
 
     final_val, final_acc = evaluate(model, val_batches, autocast)
+    final_reason = reason.score(model, tok, dev)[0] if tok is not None else None
     summary = {
         "name": args.name, "model": args.model, "config": dataclasses.asdict(cfg),
         "params": counts, "minutes": args.minutes, "steps": step, "tokens": tokens,
         "tok_per_sec": round(tokens / train_time), "final_val_loss": round(final_val, 4),
-        "final_val_acc": round(final_acc, 4),
+        "final_val_acc": round(final_acc, 4), "final_reason_acc": round(final_reason, 3) if final_reason is not None else None,
         "peak_ram_mb": peak_ram_mb(), "peak_vram_mb": peak_vram_mb(), "device": args.device, "dtype": args.dtype, "threads": args.threads,
         "batch": args.batch, "lr": args.lr, "schedule": args.schedule,
         "ctx_warmup_frac": args.ctx_warmup_frac, "ctx_start": args.ctx_start, "ns_steps": args.ns_steps,
