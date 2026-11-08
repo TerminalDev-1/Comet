@@ -15,7 +15,7 @@ Shared Python environment: `Comet/.venv` (run e.g. `../.venv/Scripts/python trai
 ## Rules
 
 - **Naming:** `Comet-<Variant>-YYYY-MM-DD` for experimental models. **"Preview" + date** means: the first training pass gets released, then the model keeps being trained further until it's perfect. Discontinued models are labeled 🗄️ Legacy (weights kept privately unless Talmeez says delete).
-- **Image line:** Comet-Image-Preview v1/v2/v3 (screenshot-trained) are Legacy. Current: `Comet-Image-v4-Preview` (public general + NASA space images), then `Comet-Image-v5-Flash` (fast few-step generation, trained on screenshots + public data).
+- **Image line:** Comet-Image-Preview v1/v2/v3 (screenshot-trained) are Legacy. `Comet-Image-v4-Preview` (73.6M) was stopped early and is Legacy/experimental. Current: `Comet-Image-v4.1-Preview` (smaller, faster, public general + NASA space images), then `Comet-Image-v5-Flash` (fast few-step generation, trained on screenshots + public data).
 - **Architecture:** Transformer first, looped Transformer second. Don't modify architectures for efficiency unless asked; improve training (recipe, data, schedule, hardware) instead.
 - **Where training runs:** the RTX 4060 Ti PC over SSH (`ssh gpupc`). Its clone of this repo is at `C:\Users\User\Comet` with its own `.venv`; untracked data and checkpoints sit inside the model folders there too (e.g. `Comet-LM\data`). Private image data lives in `C:\Users\User\comet_private`. Post ETA updates every 1–2 minutes.
 - **Private data stays private:** screenshot-based data, its crops, weights trained on it and copy-check images never get pushed. Only code, text write-ups and generated sample grids that Talmeez approved get published.

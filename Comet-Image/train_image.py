@@ -47,6 +47,8 @@ def main():
     p.add_argument("--patch", type=int, default=4)
     p.add_argument("--ema", type=float, default=0.999)
     p.add_argument("--grid_every", type=float, default=4)
+    p.add_argument("--grid_n", type=int, default=64, help="images per in-training grid (fewer = shorter pauses)")
+    p.add_argument("--ckpt_every", type=float, default=5, help="save ema.pt every N training minutes")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--init", default=None, help="continue from a previous run's ema.pt (same model size)")
     p.add_argument("--warmup", type=int, default=500, help="LR warmup steps")
@@ -96,7 +98,12 @@ def main():
     print(f"[{a.name}] {N:,} crops {H}x{H}, DiT {params / 1e6:.1f}M params, {a.minutes} min", flush=True)
 
     budget, t_train, step, seen = a.minutes * 60, 0.0, 0, 0
-    next_log, next_grid, losses = 60.0, a.grid_every * 60, []
+    next_log, next_grid, next_ckpt, losses = 60.0, a.grid_every * 60, a.ckpt_every * 60, []
+    stop_file = os.path.join(out, "STOP")
+
+    def save_ckpt():
+        torch.save({"config": vars(a), "img": H, "step": step, "train_min": round(t_train / 60, 2),
+                    "state": ema.state_dict()}, os.path.join(out, "ema.pt"))
     wall0 = time.perf_counter()
     while t_train < budget:
         t0 = time.perf_counter()
@@ -130,8 +137,14 @@ def main():
                               "img_per_sec": round(seen / t_train), "vram_mb": round(torch.cuda.max_memory_allocated() / 2**20),
                               "eta_min": round((budget - t_train) / 60 * wall_per, 1)}), flush=True)
             losses, next_log = [], next_log + 60
+        if t_train >= next_ckpt:  # never lose the model if the run is stopped early
+            save_ckpt()
+            next_ckpt += a.ckpt_every * 60
+        if os.path.exists(stop_file):  # drop a file named STOP in the run folder to end cleanly
+            print(f"STOP file found at {t_train / 60:.1f} min: finishing now", flush=True)
+            break
         if t_train >= next_grid:
-            save_grid(to_img(sample(ema, 64, seed=1)), os.path.join(out, f"grid_{t_train / 60:04.1f}min.png"))
+            save_grid(to_img(sample(ema, a.grid_n, seed=1)), os.path.join(out, f"grid_{t_train / 60:04.1f}min.png"))
             print(f"GRID {t_train / 60:.1f} min", flush=True)
             next_grid += a.grid_every * 60
 
@@ -150,8 +163,8 @@ def main():
     pairs = np.concatenate([np.stack([final[k], data[int(arg[k])].cpu().numpy()]) for k in range(16)])
     save_grid(pairs, os.path.join(out, "nearest_pairs.png"), cols=8)
     rms = (best / (H * H * 3) ** 0.5).cpu().numpy()
-    torch.save({"config": vars(a), "img": H, "state": ema.state_dict()}, os.path.join(out, "ema.pt"))
-    summary = {"name": a.name, "params": params, "crops": N, "steps": step, "minutes": a.minutes,
+    save_ckpt()
+    summary = {"name": a.name, "params": params, "crops": N, "steps": step, "minutes": round(t_train / 60, 2),
                "img_per_sec": round(seen / t_train), "nearest_rms_pixel_dist": [round(float(v), 1) for v in rms]}
     json.dump(summary, open(os.path.join(out, "summary.json"), "w"), indent=2)
     print("DONE", json.dumps(summary), flush=True)

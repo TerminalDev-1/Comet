@@ -4,12 +4,25 @@
 
 | Model | Status |
 |---|---|
-| Comet-Image-v4-Preview-2026-11-08 | **Next:** first public-data model (general images + NASA space images). In preparation. |
+| Comet-Image-v4.1-Preview-2026-11-08 | **Next:** smaller, faster public-data model. In preparation. |
+| Comet-Image-v4-Preview-2026-11-08 | 🗄️ **Legacy, experimental** (stopped at 15 of 60 min, 2026-11-08) |
 | Comet-Image-Preview-v3-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-v2-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
-*v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Next: **Comet-Image-v4-Preview**, trained on public general images (space, the sun and moon, everyday photos), not screenshots. "Preview" means the first training pass is released, then the model keeps training until it's right.*
+*v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Next: **Comet-Image-v4.1-Preview**, a smaller and faster model trained on public general images (space, the sun and moon, everyday photos), not screenshots. "Preview" means the first training pass is released, then the model keeps training until it's right.*
+
+## Legacy: Comet-Image-v4-Preview-2026-11-08 (experimental, stopped)
+
+![v4-Preview at 10 minutes](results/comet_image_v4_preview_10min_grid.png)
+
+*v4-Preview at 10 minutes of training: still colored static.*
+
+The first public-data model: a **73.6M-parameter** DiT (d=576, 12 layers, 9 heads, patch 4), trained from scratch at 128×128 on **66,598 crops from 9,514 public images**:
+- **6,167 NASA space images** (sun, moon, planets, galaxies, nebulae, Earth from orbit), downloaded with `fetch_nasa.py` and filtered with CLIP (`filter_space.py`). 2,452 off-topic NASA photos (people, hardware, diagrams) were set aside.
+- **3,347 Microcosmos images** (CC0: photos, food, landscapes, art, illustrations), via `fetch_microcosmos.py`.
+
+**Stopped at 15 of 60 training minutes.** At 45 images/sec, the big model learned too slowly to be practical on an 8 GB card (loss 1.23 → 0.126), and each 64-image grid paused training ~2 minutes. The trainer only saved weights at the end, so **no checkpoint exists**; the 10-minute grid is the record. `train_image.py` now saves a checkpoint every 5 minutes (`--ckpt_every`) and stops cleanly when a `STOP` file appears in the run folder.
 
 ## Legacy: Comet-Image-Preview v1, v2 and v3 (discontinued)
 
