@@ -61,7 +61,7 @@ class Combined:
             o.step()
 
 
-def build_optimizer(model, kind, lr, weight_decay, muon_lr=0.02, expert_optim="muon"):
+def build_optimizer(model, kind, lr, weight_decay, muon_lr=0.02, expert_optim="muon", ns_steps=5):
     """Each param group gets a 'base_lr'; train.py scales all groups by the schedule.
 
     expert_optim="adamw" keeps EMOE expert weights (pool.*) on AdamW: Muon's cost grows
@@ -76,7 +76,7 @@ def build_optimizer(model, kind, lr, weight_decay, muon_lr=0.02, expert_optim="m
         hidden = [p for n, p in named if p.dim() >= 2 and not is_adam(n)]
         other_decay = [p for n, p in named if p.dim() >= 2 and is_adam(n)]
         other_nodecay = [p for n, p in named if p.dim() < 2]
-        muon = Muon(hidden, lr=muon_lr, weight_decay=0.0)
+        muon = Muon(hidden, lr=muon_lr, weight_decay=0.0, ns_steps=ns_steps)
         adam = torch.optim.AdamW(
             [{"params": other_decay, "weight_decay": weight_decay},
              {"params": other_nodecay, "weight_decay": 0.0}],

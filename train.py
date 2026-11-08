@@ -43,6 +43,11 @@ def get_args():
     p.add_argument("--expert_optim", default="muon", choices=["muon", "adamw"], help="optimizer for EMOE expert weights")
     p.add_argument("--decay_frac", type=float, default=0.25, help="wsd: fraction of time spent decaying")
     p.add_argument("--warmup_frac", type=float, default=0.03)
+    p.add_argument("--ctx_warmup_frac", type=float, default=0.0,
+                   help="short-context warmup: grow context from --ctx_start to full over this fraction of time "
+                        "(batch grows to keep tokens per step equal)")
+    p.add_argument("--ctx_start", type=int, default=64)
+    p.add_argument("--ns_steps", type=int, default=5, help="Muon Newton-Schulz iterations")
     p.add_argument("--weight_decay", type=float, default=0.1)
     p.add_argument("--grad_clip", type=float, default=1.0)
     p.add_argument("--threads", type=int, default=6)
@@ -79,10 +84,11 @@ class Data:
         self.ctx, self.batch = ctx, batch
         self.rng = np.random.default_rng(seed)
 
-    def get(self):
-        ix = self.rng.integers(0, len(self.arr) - self.ctx - 1, self.batch)
-        x = np.stack([self.arr[i:i + self.ctx] for i in ix]).astype(np.int64)
-        y = np.stack([self.arr[i + 1:i + 1 + self.ctx] for i in ix]).astype(np.int64)
+    def get(self, ctx=None, batch=None):
+        ctx, batch = ctx or self.ctx, batch or self.batch
+        ix = self.rng.integers(0, len(self.arr) - ctx - 1, batch)
+        x = np.stack([self.arr[i:i + ctx] for i in ix]).astype(np.int64)
+        y = np.stack([self.arr[i + 1:i + 1 + ctx] for i in ix]).astype(np.int64)
         return torch.from_numpy(x), torch.from_numpy(y)
 
 
@@ -104,7 +110,17 @@ def lr_at(frac, args):
 
 
 def make_optimizer(model, args):
-    return build_optimizer(model, args.optim, args.lr, args.weight_decay, args.muon_lr, args.expert_optim)
+    return build_optimizer(model, args.optim, args.lr, args.weight_decay, args.muon_lr, args.expert_optim,
+                           ns_steps=args.ns_steps)
+
+
+def ctx_batch_at(frac, args, full_ctx):
+    """Short-context warmup: context grows in steps of ctx_start; tokens per step stay constant."""
+    if frac >= args.ctx_warmup_frac:
+        return full_ctx, args.batch
+    c = args.ctx_start + (full_ctx - args.ctx_start) * frac / args.ctx_warmup_frac
+    c = max(args.ctx_start, int(c) // args.ctx_start * args.ctx_start)
+    return c, args.batch * full_ctx // c
 
 
 def peak_ram_mb():
@@ -189,7 +205,7 @@ def main():
         mult = lr_at(train_time / budget, args) / args.lr  # schedule multiplier
         for g in opt.param_groups:
             g["lr"] = g["base_lr"] * mult
-        x, y = train.get()
+        x, y = train.get(*ctx_batch_at(train_time / budget, args, cfg.ctx))
         with autocast():
             _, loss = model(x, y)
         opt.zero_grad(set_to_none=True)
@@ -210,6 +226,7 @@ def main():
         "final_val_acc": round(final_acc, 4),
         "peak_ram_mb": peak_ram_mb(), "dtype": args.dtype, "threads": args.threads,
         "batch": args.batch, "lr": args.lr, "schedule": args.schedule,
+        "ctx_warmup_frac": args.ctx_warmup_frac, "ctx_start": args.ctx_start, "ns_steps": args.ns_steps,
         "optim": args.optim, "expert_optim": args.expert_optim, "muon_lr": args.muon_lr if args.optim == "muon" else None,
     }
     with open(os.path.join(out_dir, "summary.json"), "w") as f:

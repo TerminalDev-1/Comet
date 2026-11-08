@@ -45,6 +45,9 @@ class CometConfig:
     mtp_weight: float = 0.3  # weight of the MTP loss
     mtp_frac: float = 0.5  # fraction of positions scored by the MTP head
     mtp_block: bool = True  # extra transformer block per MTP depth (False = light, cheaper)
+    # Speedrun-style tricks (modded-nanoGPT). Off by default until tested.
+    logit_softcap: float = 0.0  # >0: logits = cap * tanh(logits / cap)
+    unet: bool = False  # U-Net skips: first-half block outputs feed the mirrored second-half blocks
     # Mixture of Depths. Off by default.
     mod: bool = False
     mod_capacity: float = 0.5  # target fraction of tokens processed in MoD layers
@@ -165,6 +168,8 @@ class Comet(nn.Module):
         self.mod_layers = [i for i in range(cfg.layers) if cfg.mod and i % cfg.mod_every == cfg.mod_every - 1]
         self.mod_routers = nn.ModuleDict({str(i): MoDRouter(cfg) for i in self.mod_layers})
         self.mod_frac = None  # fraction of tokens processed in MoD layers (last forward)
+        if cfg.unet:  # one learnable weight per skip (layer i feeds layer L-1-i)
+            self.skip_w = nn.Parameter(torch.ones(cfg.layers // 2))
         for m in self.modules():
             if isinstance(m, (nn.Linear, nn.Embedding)):
                 nn.init.normal_(m.weight, std=0.02)
@@ -174,8 +179,11 @@ class Comet(nn.Module):
 
     def forward(self, idx, targets=None):
         x = self.tok(idx)
-        aux, fracs = [], []
+        aux, fracs, skips = [], [], []
+        L = len(self.blocks)
         for i, b in enumerate(self.blocks):
+            if self.cfg.unet and i >= L - L // 2:
+                x = x + self.skip_w[L - 1 - i] * skips[L - 1 - i]
             if str(i) in self.mod_routers:
                 x, a, f = self.mod_routers[str(i)](b, x)
                 fracs.append(f)
@@ -183,9 +191,14 @@ class Comet(nn.Module):
                     aux.append(a)
             else:
                 x = b(x)
+            if self.cfg.unet and i < L // 2:
+                skips.append(x)
         if fracs:
             self.mod_frac = float(torch.stack(fracs).mean())
         logits = self.norm(x) @ self.tok.weight.T  # tied embeddings
+        if self.cfg.logit_softcap:
+            c = self.cfg.logit_softcap
+            logits = c * torch.tanh(logits / c)
         if targets is None:
             return logits
         loss = F.cross_entropy(logits.float().reshape(-1, logits.size(-1)), targets.reshape(-1))
