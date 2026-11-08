@@ -4,13 +4,14 @@
 
 | Model | Status |
 |---|---|
-| Comet-Image-Preview-v3-2026-11-08 | Current preview (128×128). See the v3 section below. |
+| Comet-Image-v4-Preview-2026-11-08 | **Next:** first public-data model (general images + NASA space images). In preparation. |
+| Comet-Image-Preview-v3-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-v2-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
-*v1 and v2 were trained only on Talmeez's screenshots at 64×64 and were discontinued. Their write-ups stay below as a record. Next: Comet-Image-Large-Preview, trained on public general images (space, the sun and moon, everyday photos), not screenshots.*
+*v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Next: **Comet-Image-v4-Preview**, trained on public general images (space, the sun and moon, everyday photos), not screenshots. "Preview" means the first training pass is released, then the model keeps training until it's right.*
 
-## Legacy: Comet-Image-Preview v1 and v2 (discontinued)
+## Legacy: Comet-Image-Preview v1, v2 and v3 (discontinued)
 
 ![Comet-Image-Preview-v2 samples (legacy)](results/comet_image_v2_grid.png)
 
@@ -50,7 +51,7 @@ Continued from v1's weights for another 20 minutes (lr 2e-4), with 8 new screens
 
 **Copy check (v2):** the closest matches (pixel distance 3–13) are all near-black tiles next to other near-black tiles (an empty dark screen next to an empty dark screen). Every tile with content differs clearly from its nearest real crop. It still makes new images rather than copying.
 
-## v3: 128×128, sharper and more colorful (Comet-Image-Preview-v3-2026-11-08)
+### v3: 128×128, sharper and more colorful (Comet-Image-Preview-v3-2026-11-08, legacy)
 
 ![Comet-Image-Preview-v3 samples](results/comet_image_v3_grid.png)
 
