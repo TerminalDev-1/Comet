@@ -22,6 +22,7 @@ def main():
     p.add_argument("--steps", type=int, default=60)
     p.add_argument("--scale", type=int, default=4)
     p.add_argument("--smooth", action="store_true", help="smooth (bicubic) upscaling instead of sharp pixels")
+    p.add_argument("--vivid", type=float, default=1.0, help="color saturation multiplier, e.g. 1.3 (1 = as generated)")
     a = p.parse_args()
 
     dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -35,6 +36,9 @@ def main():
     name = os.path.basename(os.path.dirname(os.path.abspath(a.ckpt)))
     for i, im in enumerate(imgs):
         img = Image.fromarray(im)
+        if a.vivid != 1.0:
+            from PIL import ImageEnhance
+            img = ImageEnhance.Color(img).enhance(a.vivid)
         size = (img.width * a.scale, img.height * a.scale)
         img = img.resize(size, Image.BICUBIC if a.smooth else Image.NEAREST)
         path = os.path.join(a.out, f"{name}_seed{a.seed}_{i + 1}.png" if a.n > 1 else f"{name}_seed{a.seed}.png")

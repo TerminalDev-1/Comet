@@ -50,6 +50,9 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--init", default=None, help="continue from a previous run's ema.pt (same model size)")
     p.add_argument("--warmup", type=int, default=500, help="LR warmup steps")
+    p.add_argument("--t_shift", type=float, default=0.0, help=">0: more training on fine detail (nearly-clean images)")
+    p.add_argument("--color_boost", type=float, default=0.0,
+                   help=">0: pick colorful / detailed crops more often (weight = 1 + boost * score)")
     a = p.parse_args()
 
     torch.manual_seed(a.seed)
@@ -60,8 +63,28 @@ def main():
     N, H = data.shape[0], data.shape[1]
     model = DiT(img=H, patch=a.patch, d=a.d, layers=a.layers, heads=a.heads).to(dev)
     if a.init:
-        model.load_state_dict(torch.load(a.init, map_location=dev)["state"])
+        state = torch.load(a.init, map_location=dev)["state"]
+        if state["pos"].shape != model.pos.shape:  # trained at another resolution: stretch the position map
+            g_old, g_new = int(state["pos"].shape[1] ** 0.5), H // a.patch
+            pos = state["pos"].reshape(1, g_old, g_old, -1).permute(0, 3, 1, 2)
+            pos = torch.nn.functional.interpolate(pos, size=(g_new, g_new), mode="bicubic", align_corners=False)
+            state["pos"] = pos.permute(0, 2, 3, 1).reshape(1, g_new * g_new, -1)
+            print(f"position map stretched {g_old}x{g_old} -> {g_new}x{g_new}", flush=True)
+        model.load_state_dict(state)
         print(f"continuing from {a.init}", flush=True)
+    weights = None
+    if a.color_boost > 0:  # colorfulness (saturation) + detail (edge strength), each scaled 0..1
+        sc = []
+        for i in range(0, N, 4096):
+            c = data[i:i + 4096].float() / 255
+            sat = (c.max(-1).values - c.min(-1).values).mean((1, 2))
+            g = c.mean(-1)
+            edge = (g[:, 1:, :] - g[:, :-1, :]).abs().mean((1, 2)) + (g[:, :, 1:] - g[:, :, :-1]).abs().mean((1, 2))
+            sc.append(torch.stack([sat, edge], 1))
+        sc = torch.cat(sc)
+        sc = (sc - sc.min(0).values) / (sc.max(0).values - sc.min(0).values + 1e-6)
+        weights = 1 + a.color_boost * sc.mean(1)
+        print(f"color/detail sampling on: weights {weights.min():.2f}..{weights.max():.2f}", flush=True)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     params = sum(p.numel() for p in model.parameters())
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.99), weight_decay=0.0)
@@ -76,12 +99,12 @@ def main():
         lr = a.lr * min(1.0, step / max(1, a.warmup)) * (1.0 if frac < 0.8 else 1 - (frac - 0.8) / 0.2 * 0.9)
         for g in opt.param_groups:
             g["lr"] = lr
-        idx = torch.randint(0, N, (a.batch,), device=dev)
+        idx = torch.multinomial(weights, a.batch, replacement=True) if weights is not None else             torch.randint(0, N, (a.batch,), device=dev)
         x = data[idx].permute(0, 3, 1, 2).float() / 127.5 - 1
         flip = torch.rand(a.batch, device=dev) < 0.5  # mirror half the batch: more variety
         x = torch.where(flip[:, None, None, None], x.flip(3), x)
         with torch.autocast("cuda", dtype=torch.bfloat16):
-            loss = flow_loss(model, x)
+            loss = flow_loss(model, x, a.t_shift)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)

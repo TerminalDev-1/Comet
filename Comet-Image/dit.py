@@ -79,10 +79,11 @@ class DiT(nn.Module):
         return h.view(B, g, g, p, p, 3).permute(0, 5, 1, 3, 2, 4).reshape(B, 3, self.img, self.img)
 
 
-def flow_loss(model, x1):
-    """Flow matching: mix noise and image at a random time t, predict the velocity (image - noise)."""
+def flow_loss(model, x1, t_shift=0.0):
+    """Flow matching: mix noise and image at a random time t, predict the velocity (image - noise).
+    t_shift > 0 spends more training on nearly-clean images (t near 1), where fine detail is learned."""
     x0 = torch.randn_like(x1)
-    t = torch.sigmoid(torch.randn(x1.shape[0], device=x1.device))  # logit-normal, like SD3
+    t = torch.sigmoid(torch.randn(x1.shape[0], device=x1.device) + t_shift)  # logit-normal, like SD3
     xt = (1 - t)[:, None, None, None] * x0 + t[:, None, None, None] * x1
     return F.mse_loss(model(xt, t).float(), (x1 - x0).float())
 
