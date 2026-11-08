@@ -1,6 +1,6 @@
 # Comet Attribution License
 
-Copyright (c) 2026 TerminalDev-1. All rights reserved except as granted below.
+Copyright (c) 2026 Talmeez Ahmad. All rights reserved except as granted below.
 
 Original repository: https://github.com/TerminalDev-1/Comet
 
@@ -10,17 +10,17 @@ You may use, copy, modify, fork, and share this work (the code, models, results,
 
 ## Conditions
 
-1. **Credit the original author.** Any fork, copy, or project that contains or is built on this work must clearly credit **TerminalDev-1** as the original author and link to the original repository.
+1. **Credit the original author.** Any fork, copy, or project that contains or is built on this work must clearly credit **Talmeez Ahmad** as the original author and link to the original repository.
 
 2. **Say it in your README.** Every fork or derived project must include the following notice near the top of its README (or main documentation page, if it has no README), unchanged except for adding your own project name:
 
-   > This project is based on **Comet** by **TerminalDev-1** (https://github.com/TerminalDev-1/Comet), which was created by TerminalDev-1 with Claude (Anthropic).
+   > This project is based on **Comet** by **Talmeez Ahmad** (https://github.com/TerminalDev-1/Comet), which was created by Talmeez Ahmad with Claude (Anthropic).
 
 3. **Keep this license.** Include a copy of this license in every fork or copy, and keep the copyright line above.
 
-4. **No passing it off as your own.** You may not remove or hide the credit, or present this work or any part of it as created solely by you or anyone else. Your own changes can be credited to you, but the original work stays credited to TerminalDev-1.
+4. **No passing it off as your own.** You may not remove or hide the credit, or present this work or any part of it as created solely by you or anyone else. Your own changes can be credited to you, but the original work stays credited to Talmeez Ahmad.
 
-5. **Papers and write-ups.** If you publish results, papers, posts or models that use this work, credit TerminalDev-1 and link to the original repository.
+5. **Papers and write-ups.** If you publish results, papers, posts or models that use this work, credit Talmeez Ahmad and link to the original repository.
 
 ## Termination
 

@@ -50,4 +50,4 @@ python -m venv .venv
 
 ## License
 
-Comet is by **TerminalDev-1**, made with Claude (Anthropic). You can use and fork it freely, but you must credit TerminalDev-1 and include the attribution notice in your README. See [LICENSE.md](LICENSE.md).
+Comet is by **Talmeez Ahmad**, made with Claude (Anthropic). You can use and fork it freely, but you must credit Talmeez Ahmad and include the attribution notice in your README. See [LICENSE.md](LICENSE.md).
