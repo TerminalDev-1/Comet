@@ -2,7 +2,9 @@
 
 **Comet is a family of models by Talmeez Ahmad, made with Claude (Anthropic).** This repo is the hub: every Comet model lives in its own folder here, and they all share the same training setup (a home GPU driven from a laptop over SSH).
 
-*Coming next: **Comet-Image-v4-Flash**, an efficient, fast image model trained on public general and space images.*
+![Comet-Image-v4-Flash samples](Comet-Image/results/comet_image_v4_flash_30steps.png)
+
+*Above: Comet-Image-v4-Flash, 256×256 images from public-data training (15 minutes on a home GPU).*
 
 ## The family
 
@@ -10,7 +12,7 @@
 |---|---|---|---|
 | **Comet v1** (sunset) | [Comet-LM/](Comet-LM/) | Efficient Transformer trained on a laptop CPU | Baseline GPT quality **2.55× faster** (9.8 vs 25 min) |
 | **Comet-Preview** | [Comet-LM/](Comet-LM/) | 15.7M language model that **thinks in English** in `<think>` tags | **68%** on held-out story reasoning (v2), 13 min of GPU training |
-| **Comet-Image-v4-Flash** | [Comet-Image/](Comet-Image/) | Efficient, fast image model on public general + NASA space images | In preparation |
+| **Comet-Image-v4-Flash** | [Comet-Image/](Comet-Image/) | 32.6M **latent** Diffusion Transformer on public general + NASA space images | **256×256** painterly images in **8 steps** (~0.2 s each); trained in 15 min |
 | Comet-Image-Preview v1, v2, v3 | [Comet-Image/](Comet-Image/) | 🗄️ Legacy, discontinued (screenshot-only) | |
 
 Write-ups: [Comet-LM/README.md](Comet-LM/README.md) (v1), [Comet-LM/results/comet_preview.md](Comet-LM/results/comet_preview.md), [Comet-Image/README.md](Comet-Image/README.md).

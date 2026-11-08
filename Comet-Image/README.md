@@ -4,20 +4,37 @@
 
 | Model | Status |
 |---|---|
-| Comet-Image-v4-Flash-2026-11-08 | **Next:** efficient, fast model on public data (general + NASA space images). In preparation. |
+| **Comet-Image-v4-Flash-2026-11-08** | **Current.** Latent DiT, 256×256, 8-step generation, public data only |
 | Comet-Image-Preview-v3-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-v2-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
-*v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Next: **Comet-Image-v4-Flash**, an efficient, fast-training and fast-generating model trained on public general images (space, the sun and moon, everyday photos), not screenshots. "Preview" means the first training pass is released, then the model keeps training until it's right.*
+*v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4-Flash**, an efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
 
-## Next: Comet-Image-v4-Flash (in preparation)
+## Comet-Image-v4-Flash-2026-11-08
 
-Public training data, ready on the PC (9,514 images):
-- **6,167 NASA space images** (sun, moon, planets, galaxies, nebulae, Earth from orbit), downloaded with `fetch_nasa.py` and filtered with CLIP (`filter_space.py`). 2,452 off-topic NASA photos (people, hardware, diagrams) were set aside.
-- **3,347 Microcosmos images** (CC0: photos, food, landscapes, art, illustrations), via `fetch_microcosmos.py`.
+![Comet-Image-v4-Flash, 8 steps](results/comet_image_v4_flash_8steps.png)
 
-`train_image.py` saves a checkpoint every 5 minutes (`--ckpt_every`), stops cleanly when a `STOP` file appears in the run folder, and can draw smaller in-training grids (`--grid_n`).
+*16 images from **Comet-Image-v4-Flash**, 256×256, generated in **8 steps** (3.3 seconds for all 16, ~0.2 s per image including decoding).*
+
+**What makes it efficient: latent diffusion.** Instead of working on pixels, v4-Flash works on the compressed "latents" of Stable Diffusion's image compressor (VAE, `stabilityai/sd-vae-ft-mse`, MIT). A 256×256 image becomes a 4×32×32 latent: **256 tokens** with patch 2, versus 1,024 tokens for a 128×128 image in pixel space. The VAE decoder turns generated latents back into full-resolution images and supplies the fine detail.
+
+| | |
+|---|---|
+| Model | Latent DiT, **32.6M params** (d=384, 12 layers, 6 heads, patch 2, in_ch=4) |
+| Data | **57,078 latents** from **9,514 public images**: 6,167 NASA space images (CLIP-filtered from 8,619; `fetch_nasa.py`, `filter_space.py`) + 3,347 CC0 Microcosmos images (`fetch_microcosmos.py`). Encoded with `encode_latents.py` (one centered view + 5 crops each, 256×256) |
+| Training | 15 min on the RTX 4060 Ti, batch 64, AdamW 3e-4, flow matching, EMA 0.999. **371 images/sec** (8× faster than the 73.6M pixel-space attempt, at 4× the pixels). 5,219 steps, 4.9 GB VRAM. Loss 1.27 → **0.73** (latent losses run higher than pixel losses) |
+| Generation | **8 Euler steps** (Flash). 30 steps are also available for sharper images |
+
+**What it makes:** soft, painterly 256×256 scenes, like impressionist paintings: cloudy skies and cloud banks, misty landscapes with trees, golden fields, rocky textures, warm oranges and dark night tones. The space data shows mostly as skies, clouds and glowing shapes; distinct suns, moons and planets need more training.
+
+![Comet-Image-v4-Flash, 30 steps](results/comet_image_v4_flash_30steps.png)
+
+*The same 16 seeds with 30 steps: crisper and more saturated. Flash's 8 steps trade some sharpness for speed.*
+
+Progress: [after 5 minutes](results/comet_image_v4_flash_5min.png) it already made smooth painterly images, where the pixel-space attempt was still colored static at 10 minutes.
+
+Scripts: `encode_latents.py` → `train_latent.py` (checkpoint every 5 min; a `STOP` file in the run folder ends training cleanly). Weights on the PC: `C:\Users\User\comet_data\runs\Comet-Image-v4-Flash-2026-11-08\ema.pt`.
 
 ## Legacy: Comet-Image-Preview v1, v2 and v3 (discontinued)
 
