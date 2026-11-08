@@ -34,7 +34,14 @@
 
 Progress: [after 5 minutes](results/comet_image_v4_flash_5min.png) it already made smooth painterly images, where the pixel-space attempt was still colored static at 10 minutes.
 
-Scripts: `encode_latents.py` → `train_latent.py` (checkpoint every 5 min; a `STOP` file in the run folder ends training cleanly). Weights on the PC: `C:\Users\User\comet_data\runs\Comet-Image-v4-Flash-2026-11-08\ema.pt`.
+**Download the weights:** [GitHub Release: Comet-Image-v4-Flash-2026-11-08](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-2026-11-08) (62 MB fp16 `.safetensors` + config). Generate images:
+
+```bash
+python generate_flash.py Comet-Image-v4-Flash-2026-11-08.safetensors --out images --n 4 --seed 7          # 8 steps (Flash)
+python generate_flash.py Comet-Image-v4-Flash-2026-11-08.safetensors --out images --n 4 --steps 30        # sharper, slower
+```
+
+Scripts: `encode_latents.py` → `train_latent.py` (checkpoint every 5 min; a `STOP` file in the run folder ends training cleanly) → `generate_flash.py` (generate, or `--export` a checkpoint to fp16 safetensors).
 
 ## Legacy: Comet-Image-Preview v1, v2 and v3 (discontinued)
 

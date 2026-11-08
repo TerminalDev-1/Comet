@@ -12,7 +12,7 @@
 |---|---|---|---|
 | **Comet v1** (sunset) | [Comet-LM/](Comet-LM/) | Efficient Transformer trained on a laptop CPU | Baseline GPT quality **2.55× faster** (9.8 vs 25 min) |
 | **Comet-Preview** | [Comet-LM/](Comet-LM/) | 15.7M language model that **thinks in English** in `<think>` tags | **68%** on held-out story reasoning (v2), 13 min of GPU training |
-| **Comet-Image-v4-Flash** | [Comet-Image/](Comet-Image/) | 32.6M **latent** Diffusion Transformer on public general + NASA space images | **256×256** painterly images in **8 steps** (~0.2 s each); trained in 15 min |
+| **Comet-Image-v4-Flash** | [Comet-Image/](Comet-Image/) | 32.6M **latent** Diffusion Transformer on public general + NASA space images | **256×256** painterly images in **8 steps** (~0.2 s each); trained in 15 min. [Weights](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-2026-11-08) |
 | Comet-Image-Preview v1, v2, v3 | [Comet-Image/](Comet-Image/) | 🗄️ Legacy, discontinued (screenshot-only) | |
 
 Write-ups: [Comet-LM/README.md](Comet-LM/README.md) (v1), [Comet-LM/results/comet_preview.md](Comet-LM/results/comet_preview.md), [Comet-Image/README.md](Comet-Image/README.md).
