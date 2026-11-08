@@ -8,3 +8,4 @@ checkpoints/
 
 # Private data and outputs (never pushed)
 private/
+**/logs/
