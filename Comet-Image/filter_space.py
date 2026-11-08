@@ -36,10 +36,7 @@ def main():
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     model = CLIPModel.from_pretrained(a.model).to(dev).eval()
     proc = CLIPProcessor.from_pretrained(a.model)
-    with torch.no_grad():
-        t = proc(text=SPACE + NOT_SPACE, return_tensors="pt", padding=True).to(dev)
-        text = model.get_text_features(**t)
-        text = text / text.norm(dim=-1, keepdim=True)
+    t = proc(text=SPACE + NOT_SPACE, return_tensors="pt", padding=True).to(dev)
     files = sorted(f for f in os.listdir(a.images) if f.lower().endswith((".jpg", ".jpeg", ".png")))
     rej_dir = os.path.join(os.path.dirname(os.path.abspath(a.images)), "rejected")
     os.makedirs(rej_dir, exist_ok=True)
@@ -52,11 +49,10 @@ def main():
                 names.append(f)
             except Exception:
                 pass
-        with torch.no_grad():
+        with torch.no_grad():  # full CLIP forward: works across transformers versions
             x = proc(images=ims, return_tensors="pt").to(dev)
-            img = model.get_image_features(**x)
-            img = img / img.norm(dim=-1, keepdim=True)
-            probs = (100 * img @ text.T).softmax(-1)
+            out = model(input_ids=t["input_ids"], attention_mask=t["attention_mask"], pixel_values=x["pixel_values"])
+            probs = out.logits_per_image.softmax(-1)
             p_space = probs[:, :len(SPACE)].sum(-1).tolist()
         for f, ps in zip(names, p_space):
             keep = ps >= a.threshold
