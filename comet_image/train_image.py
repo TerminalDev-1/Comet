@@ -48,6 +48,8 @@ def main():
     p.add_argument("--ema", type=float, default=0.999)
     p.add_argument("--grid_every", type=float, default=4)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--init", default=None, help="continue from a previous run's ema.pt (same model size)")
+    p.add_argument("--warmup", type=int, default=500, help="LR warmup steps")
     a = p.parse_args()
 
     torch.manual_seed(a.seed)
@@ -57,6 +59,9 @@ def main():
     data = torch.from_numpy(np.load(a.data)).to(dev)  # uint8 (N,H,W,3), lives on the GPU
     N, H = data.shape[0], data.shape[1]
     model = DiT(img=H, patch=a.patch, d=a.d, layers=a.layers, heads=a.heads).to(dev)
+    if a.init:
+        model.load_state_dict(torch.load(a.init, map_location=dev)["state"])
+        print(f"continuing from {a.init}", flush=True)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     params = sum(p.numel() for p in model.parameters())
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, betas=(0.9, 0.99), weight_decay=0.0)
@@ -68,7 +73,7 @@ def main():
     while t_train < budget:
         t0 = time.perf_counter()
         frac = t_train / budget
-        lr = a.lr * min(1.0, step / 500) * (1.0 if frac < 0.8 else 1 - (frac - 0.8) / 0.2 * 0.9)
+        lr = a.lr * min(1.0, step / max(1, a.warmup)) * (1.0 if frac < 0.8 else 1 - (frac - 0.8) / 0.2 * 0.9)
         for g in opt.param_groups:
             g["lr"] = lr
         idx = torch.randint(0, N, (a.batch,), device=dev)
