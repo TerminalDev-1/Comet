@@ -12,7 +12,7 @@ Read this first tomorrow. Full detail lives in [plan.md](plan.md) and the `resul
 | Phase 3 Comet v1 | ✅ **Reaches baseline quality in ~10 min (2.5×)**; 12 min → 2.42–2.45, 47.3–47.6% |
 | EMOE | ✅ built + tuned (91% of dense speed, 2.6× params). ❌ doesn't beat dense in 3 min |
 | Multi-token prediction | ✅ built (full + light). ❌ doesn't beat dense in 3 min |
-| Mixture of Depths | ✅ built (causal, leak-free). 🟰 ties dense at 12 min, +24% tokens/sec |
+| Mixture of Depths | ✅ built, RAM fixed (2026-11-08: 1.49 GB vs 2.36). ❌ loses at 12 min (2.475 vs 2.441), +11% tokens/sec. Off by default |
 | Looped blocks + adaptive depth | ⏳ not started |
 | Reusable package (Phase 11) | ⏳ not started |
 | Save to global CLAUDE.md (Phase 12) | ⏳ after the architecture is final |
@@ -26,7 +26,7 @@ Charts: [results/benchmark.jpg](results/benchmark.jpg) (headline bars), [results
 2. **More coherent stories** in the same 10–15 minutes, measured with a new coherence score, not only val loss.
 3. **Reusable training kit** (Phase 11): the whole training setup, usable on any text with one command.
 
-Order: MoD memory fix → 3-minute A/Bs of speed and learning-per-token levers → coherence score → training kit. Details in plan.md (Goals 1, 4, 5).
+Order: ~~MoD memory fix~~ (done; MoD still loses at 12 min, so it's not a 5× lever) → 3-minute A/Bs of speed and learning-per-token levers → coherence score → training kit. Details in plan.md (Goals 1, 4, 5).
 
 ## What Comet is (settled)
 

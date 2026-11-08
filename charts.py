@@ -80,13 +80,13 @@ def bars(ax, labels, values, colors, fmt, title, subtitle, ymax=None, better="hi
 
 def headline():
     base = summary("baseline_d256_l6")
-    dense, mod = summary("race12_dense"), summary("race12_mod")
+    dense, mod = summary("race12s2_dense"), summary("race12s2_mod")
     target = base["final_val_loss"]
     labels = ["Baseline GPT\n25 min", "Comet\n12 min", "Comet + MoD\n12 min"]
     colors = [GRAY, COMET, COMET_LIGHT]
 
     acc = [base["final_val_acc"] * 100, dense["final_val_acc"] * 100, mod["final_val_acc"] * 100]
-    t = [base["minutes"], time_to("race12_dense", target), time_to("race12_mod", target)]
+    t = [base["minutes"], time_to("race12s2_dense", target), time_to("race12s2_mod", target)]
     speed = [base["minutes"] / x for x in t]
 
     fig, axs = plt.subplots(1, 3, figsize=(15, 6.2), dpi=150)

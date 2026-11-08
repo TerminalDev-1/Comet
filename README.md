@@ -9,7 +9,7 @@ A faster-to-train Transformer variant, built and benchmarked on a laptop CPU (AM
 | Model | Train time | Final val loss | Next-token accuracy | Time to reach 2.607 |
 |---|---|---|---|---|
 | Baseline GPT | 25 min | 2.607 | 45.2% | 25.0 min |
-| **Comet** (same-session run) | **12 min** | **2.453** | **47.3%** | **10.2 min (2.5×)** |
+| **Comet** (same-session run) | **12 min** | **2.441** | **47.3%** | **9.8 min (2.55×)** |
 | Comet (best run) | 12 min | 2.420 | 47.6% | 9.7 min (2.6×) |
 
 Same data (TinyStories), same tokenizer, same size (~6.5–6.9M parameters), same laptop.
@@ -32,7 +32,7 @@ Full numbers: [results/benchmark.md](results/benchmark.md) · details: [results/
 |---|---|---|---|
 | **EMOE** (Efficient Mixture of Experts) | `--set emoe=true` | 3.20 vs 3.115 | 2.6× the parameters at the same compute; 91% of dense speed. [results/emoe.md](results/emoe.md) |
 | **Multi-token prediction** | `--set mtp_depth=1` | 3.17 vs 3.115 | Light version shown. [results/mtp.md](results/mtp.md) |
-| **Mixture of Depths** | `--set mod=true` | 3.106 vs 3.115 | 12-min race: tie (2.458 vs 2.453), +24% tokens/sec. [results/mod.md](results/mod.md) |
+| **Mixture of Depths** | `--set mod=true` | 3.106 vs 3.115 | 12-min race: loses (2.475 vs 2.441), +11% tokens/sec; RAM fixed to dense level (1.49 vs 2.36 GB). [results/mod.md](results/mod.md) |
 
 Coming next (see [plan.md](plan.md)): parameter reuse (looped blocks), adaptive loop depth, reusable package, research paper.
 

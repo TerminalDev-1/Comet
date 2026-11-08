@@ -67,3 +67,18 @@ The fragmentation was also slowing MoD down; with the fix it's faster than befor
 | **Comet + MoD (bucket 64)** | **3.114** | **39.0%** | **4,970 (+9%)** | 1,391 MB (+1%) |
 
 **Result:** MoD no longer works against Goal 2. It now matches dense on RAM, stays slightly ahead on loss at 3 minutes, and is faster. In this real-data run the speed gain was +9%; the clean benchmark showed +36%. Real data plus eval pauses narrow the gap, and the laptop's heat varies, so the true gain is somewhere in between. Next: a 12-minute race to see whether the lead now holds to the finish.
+
+### 12-minute race after the fix (same session, `race12s2_*`)
+
+| Model | Final val loss | Accuracy | Tokens/sec | Tokens seen | Reached 2.607 at | Peak RAM |
+|---|---|---|---|---|---|---|
+| **Dense Comet** | **2.441** | **47.3%** | 4,658 | 3.35M | **9.8 min (2.55×)** | 1.40 GB |
+| Comet + MoD (bucket 64) | 2.475 | 47.0% | 5,169 (+11%) | 3.72M | 10.3 min | 1.49 GB |
+| *Earlier race: MoD, exact sizes* | *2.458* | *47.0%* | *5,606 (+24% vs its dense)* | *4.04M* | *10.1 min* | *2.36 GB* |
+
+- **RAM is fixed for real:** 1.49 GB vs 2.36 GB before, within 6% of dense over a full 12-minute run.
+- **But dense wins the race by 0.034.** MoD led only until minute 3; from minute 4 on it trailed by ~0.05 and never caught up.
+- **The bucket costs speed in real training:** padding up to the next multiple of 64 means MoD layers process more tokens than they select. Its speed-up fell from +24% to +11%, which is no longer enough to make up for each token learning less.
+- The clean benchmark (`membench`) showed bucketed MoD as *faster*, because its random-token routing and lack of eval pauses differ from real training. Lesson: confirm speed claims on real 12-minute runs.
+
+**Decision:** keep the RAM fix, keep MoD **off by default**. MoD is not a lever toward the 5× goal at this model size. Possible later retry: bucket 16 or 32 (less padding, still few shapes) at longer contexts, where skipped attention work is worth more.
