@@ -47,3 +47,7 @@ python -m venv .venv
 .venv/Scripts/python sample.py checkpoints/my_run.pt
 .venv/Scripts/python bench.py --runs baseline_d256_l6 my_run
 ```
+
+## License
+
+Comet is by **TerminalDev-1**, made with Claude (Anthropic). You can use and fork it freely, but you must credit TerminalDev-1 and include the attribution notice in your README. See [LICENSE.md](LICENSE.md).
