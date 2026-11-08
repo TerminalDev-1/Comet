@@ -5,3 +5,6 @@ __pycache__/
 data/*.bin
 data/raw/
 checkpoints/
+
+# Private data and outputs (never pushed)
+private/
