@@ -52,6 +52,8 @@ def get_args():
     p.add_argument("--grad_clip", type=float, default=1.0)
     p.add_argument("--threads", type=int, default=6)
     p.add_argument("--device", default="cpu", help="cpu or cuda")
+    p.add_argument("--data", default="", help="data file prefix, e.g. 'think_' reads data/think_train.bin")
+    p.add_argument("--init", default=None, help="start from this checkpoint (fine-tuning)")
     p.add_argument("--reason", action="store_true", help="run the story reasoning test (reason.py) at every eval")
     p.add_argument("--dtype", default="bf16", choices=["bf16", "fp32"])
     p.add_argument("--eval_every_sec", type=float, default=60)
@@ -81,8 +83,8 @@ def build_config(args, cfg_cls):
 
 
 class Data:
-    def __init__(self, split, ctx, batch, seed):
-        self.arr = np.memmap(os.path.join(ROOT, "data", f"{split}.bin"), dtype=np.uint16, mode="r")
+    def __init__(self, split, ctx, batch, seed, prefix=""):
+        self.arr = np.memmap(os.path.join(ROOT, "data", f"{prefix}{split}.bin"), dtype=np.uint16, mode="r")
         self.ctx, self.batch = ctx, batch
         self.rng = np.random.default_rng(seed)
 
@@ -154,9 +156,13 @@ def main():
     torch.manual_seed(args.seed)
     torch.set_num_threads(args.threads)
     cfg_cls, model_cls = MODELS[args.model]
-    cfg = build_config(args, cfg_cls)
+    init = torch.load(args.init, map_location="cpu") if args.init else None
+    cfg = cfg_cls(**init["config"]) if init else build_config(args, cfg_cls)
     dev = torch.device(args.device)
-    model = model_cls(cfg).to(dev)
+    model = model_cls(cfg)
+    if init:
+        model.load_state_dict(init["state"])
+    model = model.to(dev)
     counts = model.param_counts()
     opt = make_optimizer(model, args)
 
@@ -166,8 +172,8 @@ def main():
         import contextlib
         autocast = contextlib.nullcontext
 
-    train = Data("train", cfg.ctx, args.batch, args.seed)
-    val = Data("val", cfg.ctx, args.batch, 0)
+    train = Data("train", cfg.ctx, args.batch, args.seed, args.data)
+    val = Data("val", cfg.ctx, args.batch, 0, args.data)
     val_batches = [tuple(t.to(dev) for t in val.get()) for _ in range(args.eval_batches)]  # fixed val set
 
     tok = None
@@ -248,7 +254,7 @@ def main():
         "final_val_acc": round(final_acc, 4), "final_reason_acc": round(final_reason, 3) if final_reason is not None else None,
         "peak_ram_mb": peak_ram_mb(), "peak_vram_mb": peak_vram_mb(), "device": args.device, "dtype": args.dtype, "threads": args.threads,
         "batch": args.batch, "lr": args.lr, "schedule": args.schedule,
-        "ctx_warmup_frac": args.ctx_warmup_frac, "ctx_start": args.ctx_start, "ns_steps": args.ns_steps,
+        "data": args.data, "init": args.init, "ctx_warmup_frac": args.ctx_warmup_frac, "ctx_start": args.ctx_start, "ns_steps": args.ns_steps,
         "optim": args.optim, "expert_optim": args.expert_optim, "muon_lr": args.muon_lr if args.optim == "muon" else None,
     }
     with open(os.path.join(out_dir, "summary.json"), "w") as f:
