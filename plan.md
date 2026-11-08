@@ -1,6 +1,6 @@
 # Comet — Plan
 
-**Status:** Phases 0–3 done (Comet reaches baseline quality ~2.5× faster). EMOE, MTP, MoD built and tested. Next steps and honest assessment: `NEXT.md`.
+**Status: 🌅 sunset 2026-11-08** (see README). Phases 0–3 done (Comet reaches baseline quality ~2.5× faster). EMOE, MTP, MoD built and tested. Next steps and honest assessment: `NEXT.md`.
 **Code name:** `comet`
 **Its Mixture of Experts design:** **EMOE** (Efficient Mixture of Experts)
 

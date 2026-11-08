@@ -2,6 +2,18 @@
 
 A faster-to-train Transformer variant, built and benchmarked on a laptop CPU (AMD Ryzen 5 8640HS, no GPU).
 
+> ## 🌅 Sunset (2026-11-08)
+>
+> **Comet is finished and no longer developed.** It reached its main goal: on a laptop CPU with no GPU, it trains to the baseline GPT's quality **2.55× faster** (9.8 minutes instead of 25), and its stories score higher in the same time.
+>
+> **What worked:** rotary positions, QK-Norm, grouped-query attention, SwiGLU, the Muon optimizer and a warmup-stable-decay schedule, tuned for a CPU. Plain attention math was 1.7× faster than the "fused" kernel on this CPU. In the last tests, short-context warmup (train on 64-token texts first, growing to 256) was a clear extra win.
+>
+> **What didn't:** the add-ons meant to push further (expert mixing with one shared expert pool, multi-token prediction, Mixture of Depths) tied or lost to plain Comet at this size, even after fixing Mixture of Depths' memory leak (heap fragmentation, see [results/mod.md](results/mod.md)). Going further would take more compute than one laptop, or a different architecture ([research.md](research.md) lists the options that were considered).
+>
+> Everything stays here as a record: code, runs, charts and write-ups. Feel free to use and fork it under the [license](LICENSE.md).
+>
+> — Talmeez Ahmad, made with Claude (Anthropic)
+
 ![Comet benchmark](results/benchmark.jpg)
 
 ## Results

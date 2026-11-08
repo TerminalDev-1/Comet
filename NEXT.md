@@ -1,5 +1,7 @@
 # Comet — where we left off (2026-11-07, 11 PM)
 
+> **🌅 Comet is sunset (2026-11-08).** No further work planned. See the Sunset note in the README. The notes below are kept as a record.
+
 Read this first tomorrow. Full detail lives in [plan.md](plan.md) and the `results/*.md` write-ups.
 
 ## Where things stand
