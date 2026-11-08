@@ -1,4 +1,4 @@
-"""Lab-style bar charts for the README.
+"""Dark green, neon-bar benchmark charts for the README.
 
     python charts.py
 
@@ -13,15 +13,19 @@ import os
 import matplotlib
 
 matplotlib.use("Agg")
+import matplotlib.patheffects as pe  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 RUNS = os.path.join(ROOT, "results", "runs")
 
-INK, MUTED, GRID = "#1f2328", "#6b7280", "#e5e7eb"
-GRAY, COMET, COMET_LIGHT, EXPER = "#b8bec7", "#2f6fed", "#8fb0f5", "#e8743b"
+# Dark green background, neon bars.
+BG, PANEL = "#04140c", "#071d12"
+INK, MUTED, GRID = "#e8ffef", "#7fae90", "#123524"
+GRAY, COMET, COMET_LIGHT, EXPER = "#4f6b5a", "#39ff14", "#00f5d4", "#ff2bd6"
 plt.rcParams.update({
     "font.family": "DejaVu Sans", "font.size": 11, "axes.edgecolor": GRID,
+    "figure.facecolor": BG, "axes.facecolor": PANEL, "savefig.facecolor": BG,
     "axes.spines.top": False, "axes.spines.right": False, "axes.spines.left": False,
     "axes.titleweight": "bold", "axes.titlesize": 13, "axes.titlelocation": "left",
 })
@@ -47,15 +51,21 @@ def time_to(name, target):
 def bars(ax, labels, values, colors, fmt, title, subtitle, ymax=None, better="higher", hatches=None):
     xs = range(len(values))
     bs = ax.bar(xs, values, color=colors, width=0.62, zorder=3)
+    for b, c in zip(bs, colors):
+        if c != GRAY:  # neon glow: wide faint strokes under the bar
+            b.set_path_effects([pe.Stroke(linewidth=14, foreground=c, alpha=0.08),
+                                pe.Stroke(linewidth=7, foreground=c, alpha=0.18),
+                                pe.Stroke(linewidth=2.5, foreground=c, alpha=0.6), pe.Normal()])
     if hatches:
         for b, h in zip(bs, hatches):
             if h:
                 b.set_hatch(h)
-                b.set_edgecolor("white")
+                b.set_edgecolor(BG)
     top = ymax or max(values) * 1.18
     for b, v, c in zip(bs, values, colors):
         ax.text(b.get_x() + b.get_width() / 2, v + top * 0.015, fmt(v), ha="center", va="bottom",
-                fontsize=13, fontweight="bold", color=INK if c != GRAY else MUTED)
+                fontsize=13, fontweight="bold", color=c if c != GRAY else MUTED,
+                path_effects=[pe.withStroke(linewidth=4, foreground=BG)] if c != GRAY else None)
     ax.set_ylim(0, top)
     ax.set_xticks(list(xs))
     ax.set_xticklabels(labels, fontsize=10.5, color=INK)
@@ -80,7 +90,7 @@ def headline():
     speed = [base["minutes"] / x for x in t]
 
     fig, axs = plt.subplots(1, 3, figsize=(15, 6.2), dpi=150)
-    fig.patch.set_facecolor("white")
+    fig.patch.set_facecolor(BG)
     bars(axs[0], labels, acc, colors, lambda v: f"{v:.1f}%", "Next-token accuracy",
          "Held-out TinyStories", ymax=56)
     bars(axs[1], labels, t, colors, lambda v: f"{v:.1f} min", "Time to baseline quality",
@@ -88,7 +98,8 @@ def headline():
     bars(axs[2], labels, speed, colors, lambda v: f"{v:.1f}×", "Training speed-up",
          "vs. Baseline GPT", ymax=3.0)
 
-    fig.text(0.012, 0.965, "Comet", fontsize=24, fontweight="bold", color=INK, va="top")
+    fig.text(0.012, 0.965, "Comet", fontsize=24, fontweight="bold", color=COMET, va="top",
+             path_effects=[pe.withStroke(linewidth=6, foreground=COMET, alpha=0.15)])
     fig.text(0.012, 0.895, "A Transformer variant that trains 2.5× faster on a laptop CPU  "
              "(AMD Ryzen 5 8640HS, no GPU, BF16)", fontsize=12, color=MUTED, va="top")
     fig.text(0.012, 0.02,
@@ -117,7 +128,7 @@ def ablations():
     ]
     vals = [summary(r)["final_val_acc"] * 100 for _, r, _, _ in rows]
     fig, ax = plt.subplots(figsize=(15, 6.4), dpi=150)
-    fig.patch.set_facecolor("white")
+    fig.patch.set_facecolor(BG)
     bars(ax, [r[0] for r in rows], vals, [r[2] for r in rows], lambda v: f"{v:.1f}%",
          "What each part adds", "Next-token accuracy after a 3-minute training run", ymax=46,
          hatches=[r[3] for r in rows])
@@ -125,7 +136,8 @@ def ablations():
     ax.text(1.0, 44.2, "Core build-up", ha="center", fontsize=10, color=MUTED, fontweight="bold")
     ax.text(6.0, 44.2, "Experimental options (same session as control*)", ha="center", fontsize=10,
             color=MUTED, fontweight="bold")
-    fig.text(0.012, 0.965, "Comet — ablations", fontsize=22, fontweight="bold", color=INK, va="top")
+    fig.text(0.012, 0.965, "Comet — ablations", fontsize=22, fontweight="bold", color=COMET, va="top",
+             path_effects=[pe.withStroke(linewidth=6, foreground=COMET, alpha=0.15)])
     fig.text(0.012, 0.9, "Each bar is one 3-minute run with its own full learning-rate schedule, "
              "same data and laptop", fontsize=12, color=MUTED, va="top")
     fig.text(0.012, 0.02,

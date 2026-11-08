@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 RUNS = os.path.join(ROOT, "results", "runs")
-COLORS = {"baseline": "#8a8f98", "comet": "#2f6fed", "vtransformer": "#2f6fed"}  # vtransformer = old name
+COLORS = {"baseline": "#7fae90", "comet": "#39ff14", "vtransformer": "#39ff14"}  # vtransformer = old name
 
 
 def load(name):
@@ -37,7 +37,7 @@ def label(s):
 def color(s):
     if s["model"] == "baseline":
         return COLORS["baseline"]
-    return "#e8743b" if s["config"].get("mod") or s["config"].get("emoe") else COLORS["comet"]
+    return "#ff2bd6" if s["config"].get("mod") or s["config"].get("emoe") else COLORS["comet"]
 
 
 def first_time_reaching(log, target):
@@ -61,7 +61,13 @@ def main():
     base = next(r for r in runs if r[2]["model"] == "baseline")
     target = base[2]["final_val_loss"]
 
-    plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.right": False})
+    # Same dark green / neon theme as charts.py
+    ink, muted, grid = "#e8ffef", "#7fae90", "#123524"
+    plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.right": False,
+                         "figure.facecolor": "#04140c", "axes.facecolor": "#071d12", "savefig.facecolor": "#04140c",
+                         "axes.edgecolor": grid, "axes.labelcolor": muted, "xtick.color": muted, "ytick.color": muted,
+                         "text.color": ink, "axes.titlecolor": ink, "axes.grid": True, "axes.axisbelow": True, "grid.color": grid,
+                         "legend.labelcolor": ink})
     fig, ax = plt.subplots(2, 2, figsize=(12, 8.5), dpi=130)
     fig.suptitle(f"{args.title} — same laptop (Ryzen 5 8640HS, CPU, BF16)",
                  fontsize=14, fontweight="bold")
@@ -71,8 +77,8 @@ def main():
     for name, log, s in runs:
         c = color(s)
         a.plot([r["train_min"] for r in log], [r["val_loss"] for r in log], color=c, lw=2.2, label=label(s))
-    a.axhline(target, color="#d64545", ls="--", lw=1.2)
-    a.text(0.3, target - 0.04, f"Baseline final: {target}", color="#d64545", va="top", fontsize=9)
+    a.axhline(target, color="#ffd60a", ls="--", lw=1.2)
+    a.text(0.3, target - 0.04, f"Baseline final: {target}", color="#ffd60a", va="top", fontsize=9)
     k = 0
     for name, log, s in runs:
         if s["model"] != "baseline":
@@ -95,7 +101,7 @@ def main():
     for name, log, s in runs:
         a.plot([r["tokens_M"] for r in log], [r["val_loss"] for r in log], color=color(s),
                lw=2.2, label=label(s))
-    a.axhline(target, color="#d64545", ls="--", lw=1.2)
+    a.axhline(target, color="#ffd60a", ls="--", lw=1.2)
     a.set_ylim(2.2, 4.6)
     a.set_xlabel("Training tokens seen (millions)")
     a.set_ylabel("Validation loss")
