@@ -1,0 +1,58 @@
+
+
+Ivy had a balloon. Ivy gave the balloon to Rosie.
+Question: Who has the balloon?
+<think>Ivy had the balloon. Ivy gave the balloon to Rosie. So Rosie has the balloon now.</think>
+Answer: Rosie
+   RIGHT (expected: Rosie)
+
+Finn had a spoon. Finn gave the spoon to Dan. Then Dan gave the spoon to Rosie.
+Question: Who has the spoon?
+<think>Binin had the spoon. Binin gave it to Dannin. Then Dannin gave it to Rosie. So Rosie has 
+the spoon now.</think>
+Answer: Rosie
+   RIGHT (expected: Rosie)
+
+Ruby put the balloon in the pocket and the shell in the tent.
+Question: Where is the shell?
+<think>Tamjon put the balloon in the pocket. Tamjon put the shell in the tent. So the shell is in 
+the tent.</think>
+Answer: in the tent
+   RIGHT (expected: in the tent)
+
+Ivy put the spoon in the tent. Later, Jake moved the spoon to the pocket.
+Question: Where is the spoon?
+<think>First the spoon was in the tent. Then Jake moved it to the pocket. So the spoon is in the 
+pocket now.</think>
+Answer: in the pocket
+   RIGHT (expected: in the pocket)
+
+Molly had four socks. Molly gave one socks to a friend.
+Question: How many socks does Molly have now?
+<think>Molly had four socks. Molly gave away one. Four take away one is three.</think>
+Answer: three
+   RIGHT (expected: three)
+
+Molly is a dog and Jake is a girl. One of them barked.
+Question: Who barked?
+<think>A dog can bark. A girl cannot bark. Molly is the dog. So Molly barked.</think>
+Answer: Molly
+   RIGHT (expected: Molly)
+
+Ollie is taller than Finn.
+Question: Who is taller?
+<think>Oscar is taller than Wendy. So Oscar is the taller one.</think>
+Answer: Oscar
+   WRONG (expected: Ollie)
+
+Rosie won the race at school.
+Question: How did Rosie feel?
+<think>Winning makes you proud. Rosie won the race at school. So Rosie felt proud.</think>
+Answer: proud
+   RIGHT (expected: proud)
+
+Held-out reasoning accuracy: 272/400 = 68.0%
+  give 26/50  give2 27/50  place 41/50  move 47/50  count 42/50  animal 21/50  compare 18/50  
+feel 50/50
+
+
