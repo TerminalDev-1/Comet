@@ -1,16 +1,26 @@
-# Comet-Image: Comet-Image-Preview-2026-11-08 (and v2)
+# Comet-Image
 
 *Part of the [Comet hub](../README.md).*
 
-![Comet-Image-Preview-v2 samples](results/comet_image_v2_grid.png)
+| Model | Status |
+|---|---|
+| Comet-Image-Preview-v3-2026-11-08 | Current preview (128×128). See the v3 section below. |
+| Comet-Image-Preview-v2-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
+| Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
-*64 images generated from pure noise by **Comet-Image-Preview-v2-2026-11-08** (shown at 2× size). None of them is a real screenshot; see the copy check below.*
+*v1 and v2 were trained only on Talmeez's screenshots at 64×64 and were discontinued. Their write-ups stay below as a record. Next: Comet-Image-Large-Preview, trained on public general images (space, the sun and moon, everyday photos), not screenshots.*
+
+## Legacy: Comet-Image-Preview v1 and v2 (discontinued)
+
+![Comet-Image-Preview-v2 samples (legacy)](results/comet_image_v2_grid.png)
+
+*Legacy: 64 images from **Comet-Image-Preview-v2-2026-11-08** (shown at 2× size). None of them is a real screenshot.*
 
 The first **image model** in the Comet family: a small **Diffusion Transformer (DiT)** trained with flow matching (the Stable Diffusion 3 recipe) on Talmeez's own screenshots, on the RTX 4060 Ti over SSH.
 
 *The screenshots, the training crops, the copy-check images and the weights are private: they stay out of this repo (in `Comet-Image/private/` locally, `~/comet_private` on the PC).*
 
-## Setup
+### Setup (v1)
 
 | | |
 |---|---|
@@ -20,7 +30,7 @@ The first **image model** in the Comet family: a small **Diffusion Transformer (
 | Sampling | 60 Euler steps from pure noise |
 | Loss | 0.90 (min 1) → 0.11 (min 2) → 0.061 (min 10) → **0.053** (min 20) |
 
-## What it makes
+### What v1 makes
 
 Small images that clearly *look like screenshots*, without being any particular one:
 - **Document and web pages:** white backgrounds, a bolder heading line, rows of tiny "text" (fake squiggles, not readable), paragraph gaps, the odd blue link.
@@ -30,11 +40,11 @@ Small images that clearly *look like screenshots*, without being any particular 
 
 Progress across grids (min 4 → 8 → 12 → 16 → 20): static with the right colors → text rows and regions → headings and paragraphs → app-window bands → sharper, with smoother flat areas.
 
-## Copy check
+### Copy check (v1)
 
 For 16 samples, the nearest of all 87k training crops (pixel distance) was found and compared side by side. The nearest real crops have readable UI text and sharp edges; the generated ones don't match any of them. Very small distances (10–12) only happen for near-blank tiles (all dark or all white). **The model makes new screenshot-like images; it isn't copying training images.**
 
-## v2: 20 more minutes (Comet-Image-Preview-v2-2026-11-08)
+### v2: 20 more minutes (Comet-Image-Preview-v2-2026-11-08, legacy)
 
 Continued from v1's weights for another 20 minutes (lr 2e-4), with 8 new screenshots added (87,450 crops). Loss **0.053 → 0.046**. Compared with v1: crisper text pages (evenly spaced lines, indents, bold headings, blue link lines), smoother gradients (blue and gray backgrounds no longer blocky), and fewer chaotic mosaics. Busy photo-like crops are still the weak spot.
 

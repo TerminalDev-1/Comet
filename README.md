@@ -2,9 +2,9 @@
 
 **Comet is a family of models by Talmeez Ahmad, made with Claude (Anthropic).** This repo is the hub: every Comet model lives in its own folder here, and they all share the same training setup (a home GPU driven from a laptop over SSH).
 
-![Comet-Image-Preview-v2 samples](Comet-Image/results/comet_image_v2_grid.png)
+![Comet-Image-Preview-v3 samples](Comet-Image/results/comet_image_v3_grid.png)
 
-*Above: 64 images generated from pure noise by Comet-Image-Preview-v2.*
+*Above: 64 images generated from pure noise by Comet-Image-Preview-v3 (128×128).*
 
 ## The family
 
@@ -12,7 +12,8 @@
 |---|---|---|---|
 | **Comet v1** (sunset) | [Comet-LM/](Comet-LM/) | Efficient Transformer trained on a laptop CPU | Baseline GPT quality **2.55× faster** (9.8 vs 25 min) |
 | **Comet-Preview** | [Comet-LM/](Comet-LM/) | 15.7M language model that **thinks in English** in `<think>` tags | **68%** on held-out story reasoning (v2), 13 min of GPU training |
-| **Comet-Image-Preview** | [Comet-Image/](Comet-Image/) | 22M Diffusion Transformer trained on screenshots | v3: **128×128**, sharper and more colorful; new images, no copying (60 min total) |
+| **Comet-Image-Preview-v3** | [Comet-Image/](Comet-Image/) | 22M Diffusion Transformer trained on screenshots | **128×128**, sharper and more colorful; new images, no copying |
+| Comet-Image-Preview v1, v2 | [Comet-Image/](Comet-Image/) | 🗄️ Legacy, discontinued (screenshot-only, 64×64) | |
 
 Write-ups: [Comet-LM/README.md](Comet-LM/README.md) (v1), [Comet-LM/results/comet_preview.md](Comet-LM/results/comet_preview.md), [Comet-Image/README.md](Comet-Image/README.md).
 
