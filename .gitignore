@@ -2,8 +2,8 @@
 .venv-dml/
 __pycache__/
 *.pyc
-data/*.bin
-data/raw/
+**/data/*.bin
+**/data/raw/
 checkpoints/
 
 # Private data and outputs (never pushed)

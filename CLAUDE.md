@@ -1,21 +1,21 @@
-# Comet
+# Comet (hub)
 
-**Comet is Talmeez Ahmad's model brand: an umbrella of models, not one architecture.** Any model can join the family: language models, image models, image classifiers, specialized and very tiny models, looped Transformers. When Talmeez says "train a model in the Comet family", build and train it here under the Comet name.
+**Comet is Talmeez Ahmad's model brand: an umbrella of models, not one architecture.** This repo (`C:\Users\gamer\Desktop\Comet`, GitHub TerminalDev-1/Comet) is the **hub for training every Comet model**. Each model line gets its own folder inside it. Any model can join: language models, image models, image classifiers, specialized and very tiny models, looped Transformers. When Talmeez says "train a model in the Comet family", make a `Comet-<Name>/` folder here (or use an existing one) and train it.
 
-- **Naming:** `Comet-<Variant>-YYYY-MM-DD` for experimental models (e.g. `Comet-Preview-2026-11-08`, `Comet-Image-Preview-2026-11-08`).
+## Layout
+
+| Folder | Contents |
+|---|---|
+| `Comet-LM/` | Language models: Comet v1 (sunset efficient Transformer) and Comet-Preview (`<think>` reasoning). Code: `comet/`, `train.py` (`--device cuda`, `--reason`, `--data think_`, `--init`), `reason.py`, `think.py`, `data/gen_think.py`. Data `.bin` files and `checkpoints/` are untracked. |
+| `Comet-Image/` | Image models: Comet-Image-Preview v1/v2 (22M Diffusion Transformer). `prep_images.py`, `dit.py`, `train_image.py`, `generate.py`. `private/` holds grids and single images (gitignored). |
+| root | `README.md` (family index; keep it updated), `LICENSE.md`, `SSH_SETUP.md`, `pc_setup.ps1`, `research.md`. |
+
+Shared Python environment: `Comet/.venv` (run e.g. `../.venv/Scripts/python train.py` from a model folder).
+
+## Rules
+
+- **Naming:** `Comet-<Variant>-YYYY-MM-DD` for experimental models.
 - **Architecture:** Transformer first, looped Transformer second. Don't modify architectures for efficiency unless asked; improve training (recipe, data, schedule, hardware) instead.
-- **Where training runs:** the RTX 4060 Ti PC, driven from the laptop over SSH (`ssh gpupc`, project at `C:\Users\User\Comet`). See SSH_SETUP.md. Use `--device cuda`. Post ETA updates every 1–2 minutes.
-- **Private data stays private:** screenshot-based data, its crops, the weights and the copy-check images live in `private/` (gitignored) on the laptop and `C:\Users\User\comet_private` on the PC. Only code, text write-ups and generated sample grids that Talmeez approved get published.
-
-## Family so far
-
-| Model | What | Write-up |
-|---|---|---|
-| Comet v1 (chapter 1, sunset) | Efficient Transformer on a laptop CPU: baseline quality 2.55× faster | README.md, results/ |
-| Comet-Preview | 15.7M language model that thinks in `<think>` tags; 68% on new stories (v2) | results/comet_preview.md |
-| Comet-Image-Preview | 22M Diffusion Transformer trained on screenshots | results/comet_image.md |
-
-## Main scripts
-
-- `train.py` (language models; `--device cuda`, `--reason`, `--data think_`, `--init`), `reason.py`, `think.py`, `data/gen_think.py`
-- `comet_image/` (`prep_images.py`, `dit.py`, `train_image.py`)
+- **Where training runs:** the RTX 4060 Ti PC over SSH (`ssh gpupc`). Its clone of this repo is at `C:\Users\User\Comet` with its own `.venv`; untracked data and checkpoints sit inside the model folders there too (e.g. `Comet-LM\data`). Private image data lives in `C:\Users\User\comet_private`. Post ETA updates every 1–2 minutes.
+- **Private data stays private:** screenshot-based data, its crops, weights trained on it and copy-check images never get pushed. Only code, text write-ups and generated sample grids that Talmeez approved get published.
+- When a new model is added, add it to the family table in `README.md`.

@@ -1,20 +1,22 @@
-# Comet-Image-Preview-2026-11-08 (and v2)
+# Comet-Image: Comet-Image-Preview-2026-11-08 (and v2)
 
-![Comet-Image-Preview-v2 samples](comet_image_v2_grid.png)
+*Part of the [Comet hub](../README.md).*
+
+![Comet-Image-Preview-v2 samples](results/comet_image_v2_grid.png)
 
 *64 images generated from pure noise by **Comet-Image-Preview-v2-2026-11-08** (shown at 2× size). None of them is a real screenshot; see the copy check below.*
 
 The first **image model** in the Comet family: a small **Diffusion Transformer (DiT)** trained with flow matching (the Stable Diffusion 3 recipe) on Talmeez's own screenshots, on the RTX 4060 Ti over SSH.
 
-*The screenshots, the training crops, the copy-check images and the weights are private: they stay out of this repo (in `private/` locally, `~/comet_private` on the PC).*
+*The screenshots, the training crops, the copy-check images and the weights are private: they stay out of this repo (in `Comet-Image/private/` locally, `~/comet_private` on the PC).*
 
 ## Setup
 
 | | |
 |---|---|
-| Data | 2,647 screenshots (laptop + PC) → **87,186 random square crops** at 64×64 (`comet_image/prep_images.py`), mirrored at random during training |
-| Model | DiT, 22.0M params: 4×4 patches (256 tokens), d=384, 8 layers, 6 heads, adaLN-Zero time conditioning (`comet_image/dit.py`) |
-| Training | 20 min, batch 128, AdamW 3e-4 with warmup and cooldown, bf16, EMA 0.999. 5,532 steps, ~590 images/sec, 6.4 GB VRAM (`comet_image/train_image.py`) |
+| Data | 2,647 screenshots (laptop + PC) → **87,186 random square crops** at 64×64 (`prep_images.py`), mirrored at random during training |
+| Model | DiT, 22.0M params: 4×4 patches (256 tokens), d=384, 8 layers, 6 heads, adaLN-Zero time conditioning (`dit.py`) |
+| Training | 20 min, batch 128, AdamW 3e-4 with warmup and cooldown, bf16, EMA 0.999. 5,532 steps, ~590 images/sec, 6.4 GB VRAM (`train_image.py`) |
 | Sampling | 60 Euler steps from pure noise |
 | Loss | 0.90 (min 1) → 0.11 (min 2) → 0.061 (min 10) → **0.053** (min 20) |
 
@@ -37,6 +39,14 @@ For 16 samples, the nearest of all 87k training crops (pixel distance) was found
 Continued from v1's weights for another 20 minutes (lr 2e-4), with 8 new screenshots added (87,450 crops). Loss **0.053 → 0.046**. Compared with v1: crisper text pages (evenly spaced lines, indents, bold headings, blue link lines), smoother gradients (blue and gray backgrounds no longer blocky), and fewer chaotic mosaics. Busy photo-like crops are still the weak spot.
 
 **Copy check (v2):** the closest matches (pixel distance 3–13) are all near-black tiles next to other near-black tiles (an empty dark screen next to an empty dark screen). Every tile with content differs clearly from its nearest real crop. It still makes new images rather than copying.
+
+## Usage (on the GPU PC, from `Comet-Image/`)
+
+```
+python prep_images.py --src <screenshot folders> --out <private>/screens64.npy
+python train_image.py --data <private>/screens64.npy --out <private>/runs --name Comet-Image-Preview-2026-11-08 --minutes 20
+python generate.py <private>/runs/<run>/ema.pt --out <folder> --n 1 --seed 7 --smooth
+```
 
 ## Next ideas
 
