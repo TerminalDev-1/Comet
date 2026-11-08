@@ -26,11 +26,13 @@ def crops_of(path):
         return np.zeros((0, size, size, 3), np.uint8)
     W, H = im.size
     short = min(W, H)
+    if short < 32:  # tiny snips (a few pixels tall) can't make useful crops
+        return np.zeros((0, size, size, 3), np.uint8)
     out = []
     # one centered full view (square of the short side)
     x0, y0 = (W - short) // 2, (H - short) // 2
     out.append(np.asarray(im.crop((x0, y0, x0 + short, y0 + short)).resize((size, size), Image.BOX)))
-    lo = max(size, int(short * 0.12))
+    lo = min(max(size, int(short * 0.12)), short)  # small screenshots: crops can't exceed the short side
     for _ in range(n):
         s = int(rng.integers(lo, short + 1))
         x, y = int(rng.integers(0, W - s + 1)), int(rng.integers(0, H - s + 1))
