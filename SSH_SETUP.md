@@ -1,73 +1,42 @@
 # Use the 4060 Ti PC from the laptop (SSH setup)
 
-**Goal:** sit at the PC once (~15 minutes), then train on its GPU from the laptop for good.
+**Goal:** sit at the PC once (~5 minutes), then train on its GPU from the laptop for good.
 
-**You need:** both machines on the same home network, and the PC's Windows password (the account password, not the PIN).
+**You need:** both machines on the same home network. No password needed: the laptop's key is built into the setup script.
 
 ---
 
-## Step 1: at the PC, one paste (~5 min)
+## Step 1: at the PC, one line (~5 min)
+
+The laptop's key is already made, and its public half is built into [pc_setup.ps1](pc_setup.ps1). So there's **no password step**.
 
 1. Right-click Start → **Terminal (Admin)**, or **Windows PowerShell (Admin)**.
-2. Paste all of this and press Enter:
+2. Type this one line and press Enter:
 
 ```powershell
-# Install and start the SSH server, start it automatically with Windows
-Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-Start-Service sshd
-Set-Service -Name sshd -StartupType Automatic
-
-# Allow SSH through the firewall (home network only)
-if (-not (Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue)) {
-  New-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -DisplayName "OpenSSH Server (sshd)" -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 -Profile Private
-}
-
-# Use PowerShell (not cmd) for remote sessions
-New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force
-
-# Never sleep or hibernate while plugged in (a sleeping PC can't take commands)
-powercfg /change standby-timeout-ac 0
-powercfg /change hibernate-timeout-ac 0
-
-# Show what the laptop needs to know
-"PC name:  $env:COMPUTERNAME"
-"User:     $env:USERNAME"
-"IP:       " + ((Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" }).IPAddress -join ", ")
+irm https://raw.githubusercontent.com/TerminalDev-1/Comet/main/pc_setup.ps1 | iex
 ```
 
-3. **Write down the three lines it prints** (PC name, user, IP). The install line can take a few minutes.
-4. Make sure the PC's network is set to **Private**: Settings → Network & internet → your Wi-Fi or Ethernet → Network profile type → Private.
+It downloads the setup script from your own repo and runs it. That works without being signed in to GitHub, because the repo is public. The script:
+- installs and starts the SSH server, and makes it start automatically with Windows
+- allows SSH through the firewall, on private/home networks only
+- makes PowerShell the remote shell
+- adds the laptop's key (to the admin key file Windows uses, with the permissions it requires)
+- turns off sleep and hibernate while plugged in
 
-That's all at the PC. Go back to the laptop.
+3. When it says **DONE**, send Claude the lines it prints (PC name, user, IP, network, GPU).
+4. If "Network" doesn't say **Private**: Settings → Network & internet → your connection → Network profile type → Private.
 
----
+**Prefer an agent?** Codex (or any coding agent) on the PC can do it too: ask it to run that one line in an **admin** terminal. Running the line yourself is just as quick.
 
-## Step 2: on the laptop, Claude does this part
-
-Tell Claude the PC name, user and IP. Claude will:
-- create an SSH key for the PC: `~\.ssh\id_ed25519_gpupc`
-- add a shortcut, so `ssh gpupc` just works.
-
-You'll need the step 3 command that Claude gives you.
-
----
-
-## Step 3: on the laptop, one command that you run (~1 min)
-
-This copies the laptop's key to the PC, so logins never need a password again. **You** type the PC's Windows password once; Claude never sees it.
-
-Claude will give you the exact command (it contains your key and user name). It works like this:
-- It connects to the PC using your password, one time only.
-- It saves the key where Windows expects it. For admin accounts that's `C:\ProgramData\ssh\administrators_authorized_keys`, not the usual Linux spot. This is a Windows quirk, and the command handles it.
-- It sets the file permissions Windows requires, or the key gets ignored.
-
-Run it in a terminal on the laptop, type the password when asked, done.
+That's all at the PC.
 
 ---
 
-## Step 4: Claude tests and sets up the PC
+## Step 2: back on the laptop, Claude does the rest
 
-Claude checks:
+Send Claude the printed lines. Claude adds an `ssh gpupc` shortcut and checks:
+
 - `ssh gpupc` logs in with no password
 - `nvidia-smi` shows the 4060 Ti
 
@@ -88,6 +57,6 @@ Then Claude installs Python, PyTorch with CUDA and the project on the PC, all ov
 | Problem | Fix |
 |---|---|
 | `ssh gpupc` times out | The PC is off or asleep, or the network is set to Public (step 1.4). Try the IP instead of the PC name |
-| Asks for a password every time | The key file permissions on the PC are wrong. Ask Claude to re-run step 3 |
+| Asks for a password | The key wasn't added. Run the step 1 line again on the PC (it's safe to re-run) |
 | "Connection refused" | The SSH service isn't running. At the PC, in an admin PowerShell: `Start-Service sshd` |
 | `nvidia-smi` not found | The NVIDIA driver needs an update on the PC (GeForce Experience or nvidia.com) |
