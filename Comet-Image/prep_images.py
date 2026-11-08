@@ -2,8 +2,8 @@
 
     python comet_image/prep_images.py --src <dir> [<dir> ...] --out <file.npy> [--size 64 --crops 32]
 
-Each screenshot gives `--crops` random square crops (from small details up to the whole short side),
-plus one centered full view, all resized to size x size. Output: uint8 array (N, size, size, 3).
+Each image gives `--crops` random square crops (from --min_frac of the short side up to all of it),
+plus one centered full view, all resized to size x size. Reads png/jpg/jpeg/webp, recursively. Output: uint8 array (N, size, size, 3).
 Keep the source folders and the output OUT of the git repo (they're private).
 """
 import argparse
@@ -32,7 +32,7 @@ def crops_of(path):
     # one centered full view (square of the short side)
     x0, y0 = (W - short) // 2, (H - short) // 2
     out.append(np.asarray(im.crop((x0, y0, x0 + short, y0 + short)).resize((size, size), Image.BOX)))
-    lo = min(max(size, int(short * 0.12)), short)  # small screenshots: crops can't exceed the short side
+    lo = min(max(size, int(short * ARGS.min_frac)), short)  # small screenshots: crops can't exceed the short side
     for _ in range(n):
         s = int(rng.integers(lo, short + 1))
         x, y = int(rng.integers(0, W - s + 1)), int(rng.integers(0, H - s + 1))
@@ -52,9 +52,13 @@ def main():
     p.add_argument("--size", type=int, default=64)
     p.add_argument("--crops", type=int, default=32)
     p.add_argument("--workers", type=int, default=8)
+    p.add_argument("--min_frac", type=float, default=0.12,
+                   help="smallest crop as a fraction of the short side (0.12 = details for screenshots; ~0.6 for photos)")
     a = p.parse_args()
-    files = sorted(f for d in a.src for f in glob.glob(os.path.join(d, "*.png")))
-    print(f"{len(files)} screenshots -> {len(files) * (a.crops + 1):,} crops at {a.size}x{a.size}", flush=True)
+    exts = (".png", ".jpg", ".jpeg", ".webp")
+    files = sorted(f for d in a.src for f in glob.glob(os.path.join(d, "**", "*"), recursive=True)
+                   if f.lower().endswith(exts))
+    print(f"{len(files)} images -> {len(files) * (a.crops + 1):,} crops at {a.size}x{a.size}", flush=True)
     with Pool(a.workers, initializer=init, initargs=(a,)) as pool:
         parts = pool.map(crops_of, files, chunksize=8)
     arr = np.concatenate(parts)
