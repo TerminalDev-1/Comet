@@ -52,17 +52,17 @@ class Block(nn.Module):
 
 
 class DiT(nn.Module):
-    def __init__(self, img=64, patch=4, d=384, layers=8, heads=6):
+    def __init__(self, img=64, patch=4, d=384, layers=8, heads=6, in_ch=3):
         super().__init__()
-        self.img, self.patch = img, patch
+        self.img, self.patch, self.in_ch = img, patch, in_ch  # in_ch=3: pixels; 4: SD VAE latents
         n = (img // patch) ** 2
-        self.embed = nn.Conv2d(3, d, patch, patch)
+        self.embed = nn.Conv2d(in_ch, d, patch, patch)
         self.pos = nn.Parameter(torch.randn(1, n, d) * 0.02)
         self.t = TimeEmbed(d)
         self.blocks = nn.ModuleList(Block(d, heads) for _ in range(layers))
         self.norm = nn.LayerNorm(d, elementwise_affine=False, eps=1e-6)
         self.ada = nn.Sequential(nn.SiLU(), nn.Linear(d, 2 * d))
-        self.out = nn.Linear(d, patch * patch * 3)
+        self.out = nn.Linear(d, patch * patch * in_ch)
         for m in (self.ada[1], self.out):
             nn.init.zeros_(m.weight)
             nn.init.zeros_(m.bias)
@@ -74,9 +74,9 @@ class DiT(nn.Module):
         for b in self.blocks:
             h = b(h, c)
         sh, sc = self.ada(c).chunk(2, -1)
-        h = self.out(modulate(self.norm(h), sh, sc))  # (B, n, p*p*3)
-        g, p = self.img // self.patch, self.patch
-        return h.view(B, g, g, p, p, 3).permute(0, 5, 1, 3, 2, 4).reshape(B, 3, self.img, self.img)
+        h = self.out(modulate(self.norm(h), sh, sc))  # (B, n, p*p*C)
+        g, p, C = self.img // self.patch, self.patch, self.in_ch
+        return h.view(B, g, g, p, p, C).permute(0, 5, 1, 3, 2, 4).reshape(B, C, self.img, self.img)
 
 
 def flow_loss(model, x1, t_shift=0.0):
@@ -91,10 +91,10 @@ def flow_loss(model, x1, t_shift=0.0):
 @torch.no_grad()
 def sample(model, n, steps=40, device="cuda", seed=0):
     g = torch.Generator(device=device).manual_seed(seed)
-    x = torch.randn(n, 3, model.img, model.img, device=device, generator=g)
+    x = torch.randn(n, model.in_ch, model.img, model.img, device=device, generator=g)
     for i in range(steps):
         t = torch.full((n,), i / steps, device=device)
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=device != "cpu"):
             v = model(x, t).float()
         x = x + v / steps
-    return x.clamp(-1, 1)
+    return x.clamp(-1, 1) if model.in_ch == 3 else x  # latents aren't limited to [-1, 1]
