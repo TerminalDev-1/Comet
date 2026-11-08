@@ -20,6 +20,14 @@ Read this first tomorrow. Full detail lives in [plan.md](plan.md) and the `resul
 
 Charts: [results/benchmark.jpg](results/benchmark.jpg) (headline bars), [results/ablations.jpg](results/ablations.jpg) (what each part adds), [results/curves.jpg](results/curves.jpg) (loss curves).
 
+## New goals (2026-11-08)
+
+1. **5× faster:** reach the baseline's 2.607 val loss in ≤5 minutes (v1: ~10 min = 2.5×).
+2. **More coherent stories** in the same 10–15 minutes, measured with a new coherence score, not only val loss.
+3. **Reusable training kit** (Phase 11): the whole training setup, usable on any text with one command.
+
+Order: MoD memory fix → 3-minute A/Bs of speed and learning-per-token levers → coherence score → training kit. Details in plan.md (Goals 1, 4, 5).
+
 ## What Comet is (settled)
 
 **Comet is an original, efficiency-improved Transformer architecture.** It's still in the Transformer family (as are Llama, Mistral and nearly every frontier model), and its specific design genuinely trains 2.5× faster than a standard GPT on the same laptop. That speed-up didn't exist before Comet.

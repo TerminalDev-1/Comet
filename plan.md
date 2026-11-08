@@ -8,13 +8,15 @@
 
 Build a Transformer variant that, compared with a standard Transformer on the same hardware:
 
-1. **Trains faster:** reaches the same validation loss in less wall-clock time (target 1.5–3×).
+1. **Trains faster:** reaches the same validation loss in less wall-clock time. v1 hit 2.5×. **New target (2026-11-08): 5×**, i.e. the baseline's final val loss 2.607 in **≤5 minutes** on this laptop. Route: ~1.4–1.6× more tokens/sec (MoD memory fix, compile, cheaper optimizer step) × ~1.4–1.6× more learning per token (sequence-length warmup, easy-first data order, Muon/schedule tuning, speedrun tricks like U-Net skips and value embeddings). Tested in 3-minute A/Bs; keep only what wins.
 2. **Fits more parameters per GB of memory** (target 2–4×), by reusing parameters, sharing experts and cutting optimizer memory.
 3. **Runs on a PC in 10–15 minutes:** every Comet run fits a **10–15 minute budget** (never hours). PC only; no Android target.
 4. **Absorbs more, gets more right:** in less training time, the model learns more from each token and gets more things right. Measured by:
    - **Loss per token seen** (learning efficiency), not just loss per minute.
    - **Next-token accuracy** on held-out stories (how often the top guess is right).
    - **Fact-consistency probes:** short fixed tests (does it keep names, objects and who-did-what straight across a story?), scored automatically.
+   - **Coherence score (new, 2026-11-08):** stories from fixed prompts, scored for name consistency, repetition, and whether the story ends properly, plus optional side-by-side ratings vs. the baseline. Goal: in the same 10–15 minutes, stories that make clearly more sense than today's Comet. Val loss alone isn't enough.
+5. **A reusable training kit (Phase 11):** not just the model, but the whole training setup. Point it at any text, and it builds the tokenizer and data, picks the fastest settings for the hardware (CPU or GPU), and trains with presets, live ETA, resume, evaluation, charts and sampling. Anyone can train an efficient Comet with one command.
 
 Success is measured, not assumed: every idea gets tested against a plain baseline Transformer (see "How we prove it works").
 
@@ -337,7 +339,8 @@ Comet trains for **10–15 minutes**. The baseline already ran 25 minutes, and w
 ### Phase 10 (optional): Scale up
 - Best config on FineWeb-Edu, at the biggest size this PC can handle.
 
-### Phase 11: Reusable implementation
+### Phase 11: Reusable training kit
+- The goal is a reusable **training setup**, not just a model class: `comet train --data my_text.txt --preset 12min` builds the tokenizer and data, auto-picks kernels for the hardware, trains, evaluates, and charts.
 - Turn `comet/` into a clean, installable package (`pip install git+https://github.com/TerminalDev-1/Comet`), with a simple API (`Comet(CometConfig(...))`, `train(...)`), presets (tiny / small / EMOE), and docs.
 - Keep the baseline and benchmark scripts so anyone can reproduce the results.
 
