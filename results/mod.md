@@ -42,3 +42,28 @@ Turn on with `--set mod=true mod_every=2` (MoD on layers 1, 3, 5).
 ## Why the gain is small
 
 At context 256 with d=256, attention is cheap, and the routing overhead (gather, scatter, padding, masks) eats part of the saving. MoD's gain should grow with longer contexts and wider models, where skipped work is a bigger share.
+
+## Memory fix (2026-11-08)
+
+**Cause:** not the masks or buffers. A memory profile showed MoD allocates *less* per step than dense. The real cause: the number of processed tokens changes every step, so every MoD tensor has a new size, and the CPU heap fragments. Peak RAM crept up step after step (1.2 → 1.8 GB in 30 steps, 2.1 GB by 100, 2.3 GB over 12 minutes). Dense stays flat.
+
+**Fix:** `mod_bucket=64` (now the default) rounds the processed-token count up to a multiple of 64. Only a few fixed shapes exist, so the heap stops fragmenting. The extra slots are masked padding, so the math is unchanged.
+
+Clean memory test (`tools/membench.py --steps 100`, random tokens, fresh process each):
+
+| Setup | Peak RAM (above idle) | MB per M params | Tokens/sec |
+|---|---|---|---|
+| Dense Comet | 1,170 MB | 179 | 4,338 |
+| MoD, exact sizes (old) | 2,101 MB | 322 | 5,222 |
+| **MoD, bucket 64 (new)** | **1,202 MB (+3%)** | **184** | **5,897 (+36%)** |
+
+The fragmentation was also slowing MoD down; with the fix it's faster than before.
+
+3-minute A/B on real data, same session (`ab3s2_*`):
+
+| Run | Val loss | Accuracy | Tokens/sec | Peak RAM |
+|---|---|---|---|---|
+| Dense Comet | 3.124 | 38.8% | 4,563 | 1,377 MB |
+| **Comet + MoD (bucket 64)** | **3.114** | **39.0%** | **4,970 (+9%)** | 1,391 MB (+1%) |
+
+**Result:** MoD no longer works against Goal 2. It now matches dense on RAM, stays slightly ahead on loss at 3 minutes, and is faster. In this real-data run the speed gain was +9%; the clean benchmark showed +36%. Real data plus eval pauses narrow the gap, and the laptop's heat varies, so the true gain is somewhere in between. Next: a 12-minute race to see whether the lead now holds to the finish.

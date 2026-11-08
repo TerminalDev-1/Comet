@@ -50,6 +50,9 @@ class CometConfig:
     mod_capacity: float = 0.5  # target fraction of tokens processed in MoD layers
     mod_every: int = 2  # MoD on every 2nd layer (1, 3, 5)
     mod_aux_weight: float = 0.1  # weight of the router's side loss
+    mod_bucket: int = 64  # round the processed-token count up to a multiple of this (0 = exact).
+    # Exact counts change every step, which fragments the CPU heap: peak RAM crept from 1.2 to 2.3 GB.
+    # Fixed bucket sizes keep RAM flat at the dense level (tools/membench.py).
 
 
 class MLP(nn.Module):
@@ -97,6 +100,7 @@ class MoDRouter(nn.Module):
         super().__init__()
         self.lin = nn.Linear(cfg.d, 1, bias=False)
         self.capacity = cfg.mod_capacity
+        self.bucket = cfg.mod_bucket
 
     def forward(self, block, x):
         B, T, D = x.shape
@@ -111,6 +115,8 @@ class MoDRouter(nn.Module):
             sel = s > 0
             counts = sel.sum(1)
             C = max(1, int(counts.max()))
+            if self.bucket:  # fixed shapes -> no heap fragmentation (padding slots are masked)
+                C = min(T, -(-C // self.bucket) * self.bucket)
             ar = torch.arange(T, device=x.device)
             key = torch.where(sel, ar, ar + T)  # selected tokens first, in position order
             idx = key.argsort(dim=1)[:, :C]  # (B, C)

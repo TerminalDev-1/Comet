@@ -63,7 +63,8 @@ My recommendation: **fix the MoD memory problem first** (see "Open issues" below
 
 A separate review of a copy of this repo flagged these. My take and the fix for each:
 
-### 1. MoD works against Goal 2 ("more parameters per GB") — ✅ valid, top priority
+### 1. MoD works against Goal 2 ("more parameters per GB") — ✅ FIXED 2026-11-08
+- **Fixed:** the cause was heap fragmentation from changing tensor sizes, not the masks. `mod_bucket=64` keeps RAM at dense level (+1–3%) and makes MoD faster. Details: results/mod.md, test: `tools/membench.py`.
 - **Finding:** MoD raises peak RAM from **1.4 GB to 2.3 GB (+64%)** while keeping the same parameter count. Comet's goals include fitting *more* parameters per GB, so MoD as built moves the wrong way. I listed the RAM number but didn't call out the conflict; I should have.
 - **Likely causes:** per-layer gather/scatter copies, a full (batch × 256 × 256) mask per MoD layer, and padding every sequence to the longest selected count.
 - **Fix to try:** build the mask once and reuse it across the 3 MoD layers, drop the separate eye/valid masks (use a single additive bias), skip padding by grouping sequences, and measure peak RAM with a dedicated memory test, not just the process working set (which also includes data pages).
