@@ -62,6 +62,9 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--init", default=None, help="ema.pt of an earlier run to continue from")
     p.add_argument("--t_shift", type=float, default=0.0, help=">0 trains more on nearly-clean images (fine detail)")
+    p.add_argument("--grow_layers", type=int, default=0,
+                   help="with --init: deepen the model to this many blocks. Each trained block is followed by a new one "
+                        "whose adaLN-Zero gates start at zero, so the grown model starts out exactly like the old one")
     a = p.parse_args()
 
     torch.manual_seed(a.seed)
@@ -70,11 +73,24 @@ def main():
     os.makedirs(out, exist_ok=True)
     data = torch.from_numpy(np.load(a.data)).to(dev)  # float16 (N, 4, S, S), small enough for the GPU
     N, C, S = data.shape[0], data.shape[1], data.shape[2]
-    model = DiT(img=S, patch=a.patch, d=a.d, layers=a.layers, heads=a.heads, in_ch=C).to(dev)
     if a.init:
         ck = torch.load(a.init, map_location=dev)
-        model.load_state_dict(ck["state"])
-        print(f"continuing from {a.init} (step {ck['step']}, {ck['train_min']} min)", flush=True)
+        old_layers = 1 + max(int(k.split(".")[1]) for k in ck["state"] if k.startswith("blocks."))
+        state = ck["state"]
+        if a.grow_layers:
+            assert a.grow_layers % old_layers == 0, "--grow_layers must be a multiple of the old block count"
+            every = a.grow_layers // old_layers  # old block i goes to slot i*every; the slots after it are new
+            a.layers = a.grow_layers
+            state = {(f"blocks.{int(k.split('.')[1]) * every}." + k.split(".", 2)[2]) if k.startswith("blocks.") else k: v
+                     for k, v in state.items()}
+        else:
+            a.layers = old_layers
+    model = DiT(img=S, patch=a.patch, d=a.d, layers=a.layers, heads=a.heads, in_ch=C).to(dev)
+    if a.init:
+        missing, unexpected = model.load_state_dict(state, strict=not a.grow_layers)
+        assert not unexpected, unexpected
+        grown = f", grown {old_layers} -> {a.layers} blocks" if a.grow_layers else ""
+        print(f"continuing from {a.init} (step {ck['step']}, {ck['train_min']} min){grown}", flush=True)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     vae = AutoencoderKL.from_pretrained(VAE_ID, torch_dtype=torch.float16).to(dev).eval()
     params = sum(x.numel() for x in model.parameters())
