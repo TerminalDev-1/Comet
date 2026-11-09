@@ -1,10 +1,11 @@
 """Generate images with a Comet-Image latent model (e.g. Comet-Image-v4-Flash).
 
-    python generate_flash.py <weights.safetensors or ema.pt> --out <folder> [--n 4 --seed 7 --steps 8 --scale 1]
+    python generate_flash.py <weights.safetensors or ema.pt> --out <folder> [--n 4 --seed 7 --steps 30 --scale 1]
 
-Loads the latent DiT, samples latents in --steps Euler steps (8 = Flash; 30 = slower, sharper), decodes them
+Loads the latent DiT, samples latents in --steps Euler steps, decodes them
 with Stable Diffusion's VAE (stabilityai/sd-vae-ft-mse, downloaded on first use) and saves one PNG per image.
 For .safetensors weights, the matching <name>.json config must sit next to the file.
+Default steps: 30 (sharp), or whatever the model's config says ("steps": 8 for distilled Flash models).
 
 Export a training checkpoint for sharing:
     python generate_flash.py <run>/ema.pt --export <name>.safetensors
@@ -34,6 +35,7 @@ def load_model(path, dev):
         cfg = {"img": ck["img"], "in_ch": ck.get("in_ch", 3), "patch": c["patch"], "d": c["d"],
                "layers": c["layers"], "heads": c["heads"]}
         state = ck["state"]
+        cfg["steps"] = ck.get("steps", 30)
     model = DiT(**{k: cfg[k] for k in ARCH_KEYS}).to(dev).eval()
     model.load_state_dict(state)
     return model, cfg
@@ -45,18 +47,19 @@ def main():
     p.add_argument("--out", default="flash_out")
     p.add_argument("--n", type=int, default=4)
     p.add_argument("--seed", type=int, default=7)
-    p.add_argument("--steps", type=int, default=8)
+    p.add_argument("--steps", type=int, default=None, help="default: the model's own (30, or 8 for distilled)")
     p.add_argument("--scale", type=int, default=1, help="upscale the saved PNGs by this factor")
     p.add_argument("--export", default=None, help="save fp16 .safetensors + .json config here, then exit")
     a = p.parse_args()
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     model, cfg = load_model(a.weights, dev)
+    a.steps = a.steps or cfg.get("steps", 30)
 
     if a.export:
         from safetensors.torch import save_file
         save_file({k: v.half().contiguous() for k, v in model.state_dict().items()}, a.export)
         cfg = {k: cfg[k] for k in ARCH_KEYS} | {"vae": VAE_ID, "latent_scale": SCALE, "image_size": cfg["img"] * 8,
-                                                 "flash_steps": 8}
+                                                 "steps": cfg.get("steps", 30)}
         json.dump(cfg, open(os.path.splitext(a.export)[0] + ".json", "w"), indent=2)
         print(f"exported {a.export} ({os.path.getsize(a.export) / 2**20:.0f} MB) + config")
         return

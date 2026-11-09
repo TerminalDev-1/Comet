@@ -4,7 +4,7 @@
 
 Latent diffusion: the DiT never sees pixels. A 256x256 image is a 4x32x32 latent, i.e. 256 tokens with
 patch 2, so training is about as cheap as the old 64x64 pixel models while producing 256x256 images.
-"Flash": sample grids use few Euler steps (--flash_steps, default 8). Checkpoints every --ckpt_every
+Sample grids use --flash_steps Euler steps (default 30; distill_flash.py makes 8-step models). Checkpoints every --ckpt_every
 minutes; a file named STOP in the run folder ends training cleanly. --init <ema.pt> continues training from
 an earlier run's weights (Preview models keep training this way).
 """
@@ -57,7 +57,7 @@ def main():
     p.add_argument("--ema", type=float, default=0.999)
     p.add_argument("--grid_every", type=float, default=5)
     p.add_argument("--grid_n", type=int, default=16)
-    p.add_argument("--flash_steps", type=int, default=8)
+    p.add_argument("--flash_steps", type=int, default=30)
     p.add_argument("--ckpt_every", type=float, default=5)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--init", default=None, help="ema.pt of an earlier run to continue from")
