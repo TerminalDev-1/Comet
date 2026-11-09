@@ -34,7 +34,7 @@
 
 Progress: [after 5 minutes](results/comet_image_v4_flash_5min.png) it already made smooth painterly images, where the pixel-space attempt was still colored static at 10 minutes.
 
-**Download the weights:** [GitHub Release: Comet-Image-v4-Flash-2026-11-08](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-2026-11-08) (62 MB fp16 `.safetensors` + config). Generate images:
+**Download the weights:** latest: [Comet-Image-v4-Flash-Preview-2026-11-09-1604](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-preview-2026-11-09-1604) (30 min of training); first pass: [Comet-Image-v4-Flash-2026-11-08](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-2026-11-08) (15 min). Each is 62 MB fp16 `.safetensors` + config. Generate images:
 
 ```bash
 python generate_flash.py Comet-Image-v4-Flash-2026-11-08.safetensors --out images --n 4 --seed 7          # 8 steps (Flash)
@@ -43,7 +43,7 @@ python generate_flash.py Comet-Image-v4-Flash-2026-11-08.safetensors --out image
 
 Scripts: `encode_latents.py` → `train_latent.py` (checkpoint every 5 min; a `STOP` file in the run folder ends training cleanly) → `generate_flash.py` (generate, or `--export` a checkpoint to fp16 safetensors).
 
-### Continued training: 15 more minutes (2026-11-09)
+### Continued training: 15 more minutes → Comet-Image-v4-Flash-Preview-2026-11-09-1604
 
 As a Preview model, v4-Flash keeps training. Run `Comet-Image-v4-Flash-Preview-2026-11-09` continued from the 15-minute weights (`train_latent.py --init`), same data, lr 2e-4 with a 100-step warmup and the usual cooldown, 15 min, 5,225 steps at 371 images/sec.
 
@@ -51,7 +51,7 @@ Loss **0.730 → 0.709** (last-minute averages). Gains are steady but small: sam
 
 ![v4-Flash-Preview after 30 min, 8 steps](results/comet_image_v4_flash_preview_30min_8steps.png)
 
-*Same 16 seeds as above, after 30 minutes of training in total, 8 steps. [30-step version](results/comet_image_v4_flash_preview_30min_30steps.png). The weights release above is still the 15-minute pass.*
+*Same 16 seeds as above, after 30 minutes of training in total, 8 steps. [30-step version](results/comet_image_v4_flash_preview_30min_30steps.png). Released as [Comet-Image-v4-Flash-Preview-2026-11-09-1604](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-preview-2026-11-09-1604).*
 
 ## Legacy: Comet-Image-Preview v1, v2 and v3 (discontinued)
 
