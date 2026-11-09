@@ -5,7 +5,8 @@
 Latent diffusion: the DiT never sees pixels. A 256x256 image is a 4x32x32 latent, i.e. 256 tokens with
 patch 2, so training is about as cheap as the old 64x64 pixel models while producing 256x256 images.
 "Flash": sample grids use few Euler steps (--flash_steps, default 8). Checkpoints every --ckpt_every
-minutes; a file named STOP in the run folder ends training cleanly.
+minutes; a file named STOP in the run folder ends training cleanly. --init <ema.pt> continues training from
+an earlier run's weights (Preview models keep training this way).
 """
 import argparse
 import copy
@@ -59,6 +60,7 @@ def main():
     p.add_argument("--flash_steps", type=int, default=8)
     p.add_argument("--ckpt_every", type=float, default=5)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--init", default=None, help="ema.pt of an earlier run to continue from")
     a = p.parse_args()
 
     torch.manual_seed(a.seed)
@@ -68,6 +70,10 @@ def main():
     data = torch.from_numpy(np.load(a.data)).to(dev)  # float16 (N, 4, S, S), small enough for the GPU
     N, C, S = data.shape[0], data.shape[1], data.shape[2]
     model = DiT(img=S, patch=a.patch, d=a.d, layers=a.layers, heads=a.heads, in_ch=C).to(dev)
+    if a.init:
+        ck = torch.load(a.init, map_location=dev)
+        model.load_state_dict(ck["state"])
+        print(f"continuing from {a.init} (step {ck['step']}, {ck['train_min']} min)", flush=True)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     vae = AutoencoderKL.from_pretrained(VAE_ID, torch_dtype=torch.float16).to(dev).eval()
     params = sum(x.numel() for x in model.parameters())
