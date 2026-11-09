@@ -61,6 +61,7 @@ def main():
     p.add_argument("--ckpt_every", type=float, default=5)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--init", default=None, help="ema.pt of an earlier run to continue from")
+    p.add_argument("--t_shift", type=float, default=0.0, help=">0 trains more on nearly-clean images (fine detail)")
     a = p.parse_args()
 
     torch.manual_seed(a.seed)
@@ -89,6 +90,26 @@ def main():
         torch.save({"config": vars(a), "img": S, "in_ch": C, "step": step, "train_min": round(t_train / 60, 2),
                     "state": ema.state_dict()}, os.path.join(out, "ema.pt"))
 
+    # Fixed eval: same 1,024 latents, noise and times every call (t_shift 0), so runs with different
+    # --t_shift settings stay comparable. Measured on the EMA model.
+    eg = torch.Generator(device=dev).manual_seed(123)
+    e_idx = torch.randperm(N, generator=eg, device=dev)[:1024]
+    e_noise = torch.randn(1024, C, S, S, generator=eg, device=dev)
+    e_t = torch.sigmoid(torch.randn(1024, generator=eg, device=dev))
+
+    @torch.no_grad()
+    def eval_loss():
+        tot = 0.0
+        for i in range(0, 1024, 256):
+            x1, x0, t = data[e_idx[i:i + 256]].float(), e_noise[i:i + 256], e_t[i:i + 256]
+            xt = (1 - t)[:, None, None, None] * x0 + t[:, None, None, None] * x1
+            with torch.autocast("cuda", dtype=torch.bfloat16):
+                v = ema(xt, t).float()
+            tot += torch.nn.functional.mse_loss(v, x1 - x0).item() * 256
+        return round(tot / 1024, 4)
+
+    print(json.dumps({"min": 0.0, "eval_loss": eval_loss()}), flush=True)
+
     def grid(tag, steps):
         z = sample(ema, a.grid_n, steps=steps, seed=1)
         save_grid(decode(vae, z), os.path.join(out, f"grid_{tag}.png"))
@@ -103,7 +124,7 @@ def main():
         flip = torch.rand(a.batch, device=dev) < 0.5
         x = torch.where(flip[:, None, None, None], x.flip(3), x)
         with torch.autocast("cuda", dtype=torch.bfloat16):
-            loss = flow_loss(model, x)
+            loss = flow_loss(model, x, t_shift=a.t_shift)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -130,7 +151,7 @@ def main():
             break
         if t_train >= next_grid:
             grid(f"{t_train / 60:04.1f}min_{a.flash_steps}steps", a.flash_steps)
-            print(f"GRID {t_train / 60:.1f} min", flush=True)
+            print(f"GRID {t_train / 60:.1f} min", json.dumps({"eval_loss": eval_loss()}), flush=True)
             next_grid += a.grid_every * 60
 
     save_ckpt()
@@ -138,7 +159,7 @@ def main():
     grid(f"final_{a.flash_steps}steps", a.flash_steps)
     flash_sec = time.perf_counter() - t0
     grid("final_30steps", 30)
-    summary = {"name": a.name, "params": params, "latents": N, "image_size": S * 8, "steps": step,
+    summary = {"name": a.name, "eval_loss": eval_loss(), "params": params, "latents": N, "image_size": S * 8, "steps": step,
                "train_minutes": round(t_train / 60, 2), "img_per_sec": round(seen / t_train),
                "flash_steps": a.flash_steps, "sec_per_16_images_flash": round(flash_sec, 2)}
     json.dump(summary, open(os.path.join(out, "summary.json"), "w"), indent=2)
