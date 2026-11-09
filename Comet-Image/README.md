@@ -4,7 +4,10 @@
 
 | Model | Status |
 |---|---|
-| **Comet-Image-v4-Flash-Preview-2026-11-08** | **Current.** Latent DiT, 256×256, 8-step generation, public data only |
+| **Comet-Image-v4-Flash-Preview-2026-11-09-1641** | **Current.** Latent DiT, 256×256, 30-step generation (default), public data only |
+| **Comet-Image-v4-Flash-Distill-Preview-2026-11-09-1711** | **Current Flash.** The 1641 model distilled to **8 steps** with 30-step sharpness |
+| Comet-Image-v4-Flash-Preview-2026-11-09-1604 | Earlier checkpoint (30 min of training) |
+| Comet-Image-v4-Flash-Preview-2026-11-08 | First pass (15 min of training) |
 | Comet-Image-Preview-v3-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-v2-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
@@ -37,8 +40,8 @@ Progress: [after 5 minutes](results/comet_image_v4_flash_5min.png) it already ma
 **Download the weights:** latest: [Comet-Image-v4-Flash-Preview-2026-11-09-1641](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-preview-2026-11-09-1641) (60 min of training); [2026-11-09-1604](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-preview-2026-11-09-1604) (30 min); first pass: [Comet-Image-v4-Flash-2026-11-08](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-2026-11-08) (15 min). Each is 62 MB fp16 `.safetensors` + config. Generate images:
 
 ```bash
-python generate_flash.py Comet-Image-v4-Flash-2026-11-08.safetensors --out images --n 4 --seed 7          # 8 steps (Flash)
-python generate_flash.py Comet-Image-v4-Flash-2026-11-08.safetensors --out images --n 4 --steps 30        # sharper, slower
+python generate_flash.py Comet-Image-v4-Flash-Preview-2026-11-09-1641.safetensors --out images --n 4 --seed 7          # 30 steps (default, sharp)
+python generate_flash.py Comet-Image-v4-Flash-Preview-2026-11-09-1641.safetensors --out images --n 4 --steps 8         # faster, softer
 ```
 
 Scripts: `encode_latents.py` → `train_latent.py` (checkpoint every 5 min; a `STOP` file in the run folder ends training cleanly) → `generate_flash.py` (generate, or `--export` a checkpoint to fp16 safetensors).
@@ -72,6 +75,25 @@ Because `t_shift` changes the training loss itself, runs are now compared on a *
 - ✅ **At 30 steps it's clearly sharper:** harder edges, more contrast, solid shapes (white figures against black, a doorway, rocky textures, a yellow flower against leaves) instead of soft smears.
 - ⚠️ **At 8 steps (Flash) it's still soft** ([8-step grid](results/comet_image_v4_flash_preview_60min_8steps.png)): the detail lives in the last sampling steps, which 8 big steps skip.
 - ⚠️ **Still not recognizable objects.** 32.6M parameters, 9.5k images and one hour of training make convincing textures and compositions, not clear things.
+
+### Distilled to 8 steps → Comet-Image-v4-Flash-Distill-Preview-2026-11-09-1711
+
+Goal: 30-step sharpness at 8 steps. `distill_flash.py` copies the 1641 model into a student (same architecture) and trains it for **15 minutes** to cover each 4-step stretch of the teacher (32 small steps ≈ 30-step quality) in one big step, so 8 student steps land where 32 teacher steps would. 2,312 steps, batch 64, lr 1e-4, 164 images/sec.
+
+Measure: from 128 fixed noise seeds, the gap (MSE between latents) between 8-step and 30-step results.
+
+| | Gap to 30-step images |
+|---|---|
+| 1641 model at 8 steps (before) | 0.0712 |
+| after 5 min of distillation | 0.0248 |
+| after 10 min | 0.0079 |
+| **Distilled, 15 min** | **0.0031** (23× closer) |
+
+![Before 8 steps vs distilled 8 steps vs teacher 30 steps](results/comet_image_v4_flash_distill_compare.png)
+
+*Same 16 seeds. Left: the 1641 model at 8 steps (soft). Middle: **distilled, 8 steps**. Right: the 1641 model at 30 steps. Middle and right are nearly identical: hard edges, contrast and the bright sun all survive, at ~4× fewer steps.*
+
+Use: `python generate_flash.py Comet-Image-v4-Flash-Distill-Preview-2026-11-09-1711.safetensors --out images --n 4` (its config sets 8 steps). Weights: [GitHub Release](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-distill-preview-2026-11-09-1711).
 
 ## Legacy: Comet-Image-Preview v1, v2 and v3 (discontinued)
 

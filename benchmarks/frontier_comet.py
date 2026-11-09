@@ -35,13 +35,14 @@ PANELS = [
          fmt=lambda v: f"{v:.3f}", ymax=0.85,
          rows=[("v4-Flash\n15 min", 0.7182, GRAY), ("v4-Flash\n30 min", 0.6982, COMET_LIGHT),
                ("v4-Flash\n60 min", 0.6787, COMET)]),
+    dict(title="8-step distillation", subtitle="Gap to 30-step images", better="lower",
+         fmt=lambda v: f"{v:.4f}", ymax=0.085,
+         rows=[("8 steps\nbefore", 0.0712, GRAY), ("8 steps\ndistilled", 0.0031, COMET)]),
 ]
 
 
-def main(cont_loss=None):
-    if cont_loss is not None:
-        PANELS[4]["rows"][1] = (PANELS[4]["rows"][1][0], cont_loss, COMET)
-    fig, axs = plt.subplots(1, len(PANELS), figsize=(22, 7), dpi=150)
+def main():
+    fig, axs = plt.subplots(1, len(PANELS), figsize=(25, 7), dpi=150)
     fig.patch.set_facecolor(BG)
     for ax, p in zip(axs, PANELS):
         rows = [r for r in p["rows"] if r[1] is not None]
@@ -53,7 +54,7 @@ def main(cont_loss=None):
              "trained in 10–60 minutes on a laptop CPU and an RTX 4060 Ti", fontsize=12.5, color=MUTED, va="top")
     fig.text(0.010, 0.02,
              "Each panel is a different task; compare bars within a panel only. One run per setting. Pixel DiT speed "
-             "estimated from the 8× speed-up measured against it. Image loss: flow-matching loss on 1,024 fixed latents with fixed noise and times (EMA weights).",
+             "estimated from the 8× speed-up measured against it. Image loss: flow-matching loss on 1,024 fixed latents with fixed noise and times (EMA weights). Distillation gap: MSE between 8-step and 30-step latents from 128 fixed seeds.",
              fontsize=8.5, color=MUTED)
     fig.tight_layout(rect=(0, 0.05, 1, 0.82), w_pad=3)
     out = os.path.join(HERE, "frontier_comet.jpg")
@@ -62,4 +63,4 @@ def main(cont_loss=None):
 
 
 if __name__ == "__main__":
-    main(float(sys.argv[1]) if len(sys.argv) > 1 else None)
+    main()
