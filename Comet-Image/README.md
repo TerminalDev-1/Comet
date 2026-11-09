@@ -4,14 +4,14 @@
 
 | Model | Status |
 |---|---|
-| **Comet-Image-v4-Flash-2026-11-08** | **Current.** Latent DiT, 256×256, 8-step generation, public data only |
+| **Comet-Image-v4-Flash-Preview-2026-11-08** | **Current.** Latent DiT, 256×256, 8-step generation, public data only |
 | Comet-Image-Preview-v3-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-v2-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
-*v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4-Flash**, an efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
+*v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4-Flash-Preview-2026-11-08**, an efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
 
-## Comet-Image-v4-Flash-2026-11-08
+## Comet-Image-v4-Flash-Preview-2026-11-08
 
 ![Comet-Image-v4-Flash, 8 steps](results/comet_image_v4_flash_8steps.png)
 
@@ -42,6 +42,16 @@ python generate_flash.py Comet-Image-v4-Flash-2026-11-08.safetensors --out image
 ```
 
 Scripts: `encode_latents.py` → `train_latent.py` (checkpoint every 5 min; a `STOP` file in the run folder ends training cleanly) → `generate_flash.py` (generate, or `--export` a checkpoint to fp16 safetensors).
+
+### Continued training: 15 more minutes (2026-11-09)
+
+As a Preview model, v4-Flash keeps training. Run `Comet-Image-v4-Flash-Preview-2026-11-09` continued from the 15-minute weights (`train_latent.py --init`), same data, lr 2e-4 with a 100-step warmup and the usual cooldown, 15 min, 5,225 steps at 371 images/sec.
+
+Loss **0.730 → 0.709** (last-minute averages). Gains are steady but small: same seeds come out slightly crisper (sharper edges in the doorway, forest and lit-room scenes), with the same painterly style.
+
+![v4-Flash-Preview after 30 min, 8 steps](results/comet_image_v4_flash_preview_30min_8steps.png)
+
+*Same 16 seeds as above, after 30 minutes of training in total, 8 steps. [30-step version](results/comet_image_v4_flash_preview_30min_30steps.png). The weights release above is still the 15-minute pass.*
 
 ## Legacy: Comet-Image-Preview v1, v2 and v3 (discontinued)
 
