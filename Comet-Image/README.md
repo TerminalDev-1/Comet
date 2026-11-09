@@ -6,7 +6,8 @@
 |---|---|
 | **Comet-Image-v4.1-Flash** | **GA.** Latent DiT, 256×256, 30 steps, 2 h of training, public data only |
 | **Comet-Image-v4.1-Flash-Lite** | **GA.** v4.1-Flash distilled to **8 steps** |
-| **Comet-Image-v4.2-Flash-Preview-2026-11-09-2032** | **Preview.** v4.1-Flash + 60 min (3 h total), 30 steps |
+| **Comet-Image-v4.2-Flash-Preview-2026-11-09-2134** | **Latest preview.** 2032 + 15 min on more varied data (+1,700 PD12M CC0 photos) |
+| Comet-Image-v4.2-Flash-Preview-2026-11-09-2032 | Preview. v4.1-Flash + 60 min (3 h total), 30 steps |
 | Comet-Image-v4-Flash-Preview-2026-11-09-1641 | Preview checkpoint (60 min), superseded by v4.1 |
 | Comet-Image-v4-Flash-Distill-Preview-2026-11-09-1711 | Preview 8-step distillation of 1641, superseded by v4.1-Flash-Lite |
 | Comet-Image-v4-Flash-Preview-2026-11-09-1604 | Earlier checkpoint (30 min of training) |
@@ -16,6 +17,18 @@
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
 *v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4.1-Flash** and **v4.1-Flash-Lite** (GA), efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
+
+## Comet-Image-v4.2-Flash-Preview-2026-11-09-2134: more varied data
+
+Started on more data instead of more hours: **1,700 public-domain/CC0 photos** from [PD12M](https://huggingface.co/datasets/Spawning/PD12M) (`fetch_pd12m.py`, everyday subjects), encoded into 10,200 latents and merged with the old 57,078 (**67,278** total, `latents256_plus.npy`). Trained 2032 on the mix for 5 + 10 minutes. Eval on the new mix: 0.678 → 0.6781 (flat; 15 minutes is too short to learn the new photos, and these numbers aren't comparable with the old-data evals). Images: a bit more texture in rocks, foliage and grass.
+
+![v4.2-Flash-Preview-2134, 30 steps](results/comet_image_v42_flash_preview_2134_30steps.png)
+
+Also tried and **dropped**: growing v4.2 to 64.5M parameters (24 blocks, `--grow_layers`) for 20 minutes. Eval 0.6589 vs 0.6574 for the 32.6M model, same-looking images, twice the cost.
+
+**Next:** many more new photos (PD12M has 12 million; the download ran at ~500 images/min) and a longer run on them.
+
+Weights: [GitHub Release](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.2-flash-preview-2026-11-09-2134).
 
 ## Comet-Image-v4.2-Flash-Preview-2026-11-09-2032
 
