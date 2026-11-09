@@ -4,17 +4,53 @@
 
 | Model | Status |
 |---|---|
-| **Comet-Image-v4-Flash-Preview-2026-11-09-1641** | **Current.** Latent DiT, 256×256, 30-step generation (default), public data only |
-| **Comet-Image-v4-Flash-Distill-Preview-2026-11-09-1711** | **Current Flash.** The 1641 model distilled to **8 steps** with 30-step sharpness |
+| **Comet-Image-v4.1-Flash** | **GA.** Latent DiT, 256×256, 30 steps, 2 h of training, public data only |
+| **Comet-Image-v4.1-Flash-Lite** | **GA.** v4.1-Flash distilled to **8 steps** |
+| Comet-Image-v4-Flash-Preview-2026-11-09-1641 | Preview checkpoint (60 min), superseded by v4.1 |
+| Comet-Image-v4-Flash-Distill-Preview-2026-11-09-1711 | Preview 8-step distillation of 1641, superseded by v4.1-Flash-Lite |
 | Comet-Image-v4-Flash-Preview-2026-11-09-1604 | Earlier checkpoint (30 min of training) |
 | Comet-Image-v4-Flash-Preview-2026-11-08 | First pass (15 min of training) |
 | Comet-Image-Preview-v3-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-v2-2026-11-08 | 🗄️ **Legacy, discontinued** (2026-11-08) |
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
-*v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4-Flash-Preview-2026-11-08**, an efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
+*v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4.1-Flash** and **v4.1-Flash-Lite** (GA), efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
 
-## Comet-Image-v4-Flash-Preview-2026-11-08
+## Comet-Image-v4.1-Flash and v4.1-Flash-Lite (GA)
+
+![Comet-Image-v4.1-Flash, 30 steps](results/comet_image_v41_flash_30steps.png)
+
+*16 images from **Comet-Image-v4.1-Flash**, 256×256, 30 steps.*
+
+**v4.1-Flash** continues the v4-Flash-Preview line (1641 checkpoint) for **60 more minutes**: 2 hours of training in total. Same architecture and data, lr 2e-4, `--t_shift 0.5`. The run was hit by a power cut at minute 26 and resumed from its minute-20 checkpoint, so it is 20 + 40 minutes. Checkpoints now save every 5 minutes.
+
+| Checkpoint | Training | Eval loss |
+|---|---|---|
+| Comet-Image-v4-Flash-2026-11-08 | 15 min | 0.7182 |
+| v4-Flash-Preview-2026-11-09-1604 | 30 min | 0.6982 |
+| v4-Flash-Preview-2026-11-09-1641 | 60 min | 0.6787 |
+| **Comet-Image-v4.1-Flash** | **120 min** | **0.6644** |
+
+![1641 vs v4.1-Flash, same seeds](results/comet_image_v41_flash_vs_1641.png)
+
+*Same seeds. v4.1 has more structure: sharper rock textures, cleaner objects on black, richer colors, and an illustration-card-like image with an animal shape and handwriting-like marks. Most images are still abstract, not clear objects.*
+
+**Copy check** (`copy_check_latent.py`): generated images are as far from their nearest training image (median latent distance 47.8) as different training images are from each other (49.7). Top row generated, bottom row nearest training image (a comet, Venus, Saturn's rings, a rocket launch...): they're new images.
+
+![copy check](results/comet_image_v41_flash_copy_check.png)
+
+**v4.1-Flash-Lite** is v4.1-Flash distilled to 8 steps (`distill_flash.py`, 15 min): the 8-vs-30-step gap goes **0.0794 → 0.0057**.
+
+![v4.1-Flash 8 steps vs Lite vs 30 steps](results/comet_image_v41_flash_lite_compare.png)
+
+Weights: [Comet-Image-v4.1-Flash](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.1-flash) (30 steps) · [Comet-Image-v4.1-Flash-Lite](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.1-flash-lite) (8 steps).
+
+```bash
+python generate_flash.py Comet-Image-v4.1-Flash.safetensors --out images --n 4          # 30 steps
+python generate_flash.py Comet-Image-v4.1-Flash-Lite.safetensors --out images --n 4     # 8 steps
+```
+
+## Comet-Image-v4-Flash-Preview-2026-11-08 (preview history)
 
 ![Comet-Image-v4-Flash, 8 steps](results/comet_image_v4_flash_8steps.png)
 
