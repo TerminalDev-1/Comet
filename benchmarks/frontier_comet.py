@@ -33,8 +33,8 @@ PANELS = [
          rows=[("Pixel DiT\n73.6M", 371 / 8, GRAY), ("v4-Flash\nlatent 32.6M", 371, COMET)]),
     dict(title="Image generation", subtitle="Fixed eval loss", better="lower",
          fmt=lambda v: f"{v:.3f}", ymax=0.85,
-         rows=[("v4-Flash\n15 min", 0.7182, GRAY), ("v4-Flash\n60 min", 0.6787, COMET_LIGHT),
-               ("v4.1-Flash\n120 min", 0.6644, COMET)]),
+         rows=[("v4-Flash\n15 min", 0.7182, GRAY), ("v4.1-Flash\n120 min", 0.6644, COMET_LIGHT),
+               ("v4.2-Preview\n180 min", 0.6574, COMET)]),
     dict(title="8-step distillation", subtitle="Gap to 30-step images", better="lower",
          fmt=lambda v: f"{v:.4f}", ymax=0.095,
          rows=[("v4.1-Flash\n8 steps", 0.0794, GRAY), ("v4.1-Flash-Lite\n8 steps", 0.0057, COMET)]),
@@ -51,7 +51,7 @@ def main():
     fig.text(0.010, 0.965, "Frontier Comet", fontsize=28, fontweight="bold", color=COMET, va="top",
              path_effects=[pe.withStroke(linewidth=7, foreground=COMET, alpha=0.15)])
     fig.text(0.010, 0.885, "The whole Comet family on one chart: language, reasoning and image models by Talmeez Ahmad, "
-             "trained in 10–120 minutes on a laptop CPU and an RTX 4060 Ti", fontsize=12.5, color=MUTED, va="top")
+             "trained in 10–180 minutes on a laptop CPU and an RTX 4060 Ti", fontsize=12.5, color=MUTED, va="top")
     fig.text(0.010, 0.02,
              "Each panel is a different task; compare bars within a panel only. One run per setting. Pixel DiT speed "
              "estimated from the 8× speed-up measured against it. Image loss: flow-matching loss on 1,024 fixed latents with fixed noise and times (EMA weights). Distillation gap: MSE between 8-step and 30-step latents from 128 fixed seeds.",

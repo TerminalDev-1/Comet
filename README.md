@@ -18,6 +18,7 @@
 | **Comet-Preview** | [Comet-LM/](Comet-LM/) | 15.7M language model that **thinks in English** in `<think>` tags | **68%** on held-out story reasoning (v2), 13 min of GPU training |
 | **Comet-Image-v4.1-Flash** (GA) | [Comet-Image/](Comet-Image/) | 32.6M **latent** Diffusion Transformer on public general + NASA space images; 2 h of training | **256×256** images in **30 steps**, eval loss 0.718 → **0.664**. [Weights](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.1-flash) |
 | **Comet-Image-v4.1-Flash-Lite** (GA) | [Comet-Image/](Comet-Image/) | v4.1-Flash distilled to **8 steps** | Nearly the same images ~4× faster (8-vs-30-step gap 0.0794 → 0.0057). [Weights](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.1-flash-lite) |
+| **Comet-Image-v4.2-Flash-Preview-2026-11-09-2032** | [Comet-Image/](Comet-Image/) | v4.1-Flash + 60 min (3 h total) | Eval loss **0.6574** (v4.1: 0.6644); images close to v4.1. [Weights](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.2-flash-preview-2026-11-09-2032) |
 | Comet-Image-v4-Flash-Preview | [Comet-Image/](Comet-Image/) | Preview checkpoints (2026-11-08 → 2026-11-09-1641, Distill-1711), superseded by v4.1 | |
 | Comet-Image-Preview v1, v2, v3 | [Comet-Image/](Comet-Image/) | 🗄️ Legacy, discontinued (screenshot-only) | |
 

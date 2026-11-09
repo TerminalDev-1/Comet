@@ -6,6 +6,7 @@
 |---|---|
 | **Comet-Image-v4.1-Flash** | **GA.** Latent DiT, 256×256, 30 steps, 2 h of training, public data only |
 | **Comet-Image-v4.1-Flash-Lite** | **GA.** v4.1-Flash distilled to **8 steps** |
+| **Comet-Image-v4.2-Flash-Preview-2026-11-09-2032** | **Preview.** v4.1-Flash + 60 min (3 h total), 30 steps |
 | Comet-Image-v4-Flash-Preview-2026-11-09-1641 | Preview checkpoint (60 min), superseded by v4.1 |
 | Comet-Image-v4-Flash-Distill-Preview-2026-11-09-1711 | Preview 8-step distillation of 1641, superseded by v4.1-Flash-Lite |
 | Comet-Image-v4-Flash-Preview-2026-11-09-1604 | Earlier checkpoint (30 min of training) |
@@ -15,6 +16,18 @@
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
 *v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4.1-Flash** and **v4.1-Flash-Lite** (GA), efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
+
+## Comet-Image-v4.2-Flash-Preview-2026-11-09-2032
+
+Continued from **v4.1-Flash** for **60 more minutes** (3 h in total), same recipe, checkpoints every 5 min. Eval loss **0.6644 → 0.6574** (0.6651 at minute 10, as the restart at full learning rate briefly undoes v4.1's cooldown, then steadily down).
+
+![v4.1-Flash vs v4.2-Flash-Preview, same seeds](results/comet_image_v42_flash_preview_vs_v41.png)
+
+*Same seeds. v4.2 is very close to v4.1: a little more texture and color (top-left), slightly crisper edges, still mostly abstract. Copy check: median distance to the nearest training image 49.0 vs 49.7 between different training images (new images, not copies).*
+
+**Takeaway:** more training on the same 9,514 images now gives small gains (eval −0.007 per hour). Clearly better images need more and more varied training data, or a bigger model.
+
+Weights: [GitHub Release](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.2-flash-preview-2026-11-09-2032).
 
 ## Comet-Image-v4.1-Flash and v4.1-Flash-Lite (GA)
 
