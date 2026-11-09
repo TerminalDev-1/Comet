@@ -1,5 +1,7 @@
 # Comet (hub)
 
+> **Queued task:** [next-session.md](next-session.md), the big PD12M dataset run for Comet-Image. At the start of a session, tell Talmeez it's waiting and run it when he says he's ready (target: done 2026-11-10).
+
 **Comet is Talmeez Ahmad's model brand: an umbrella of models, not one architecture.** This repo (`C:\Users\gamer\Desktop\Comet`, GitHub TerminalDev-1/Comet) is the **hub for training every Comet model**. Each model line gets its own folder inside it. Any model can join: language models, image models, image classifiers, specialized and very tiny models, looped Transformers. When Talmeez says "train a model in the Comet family", make a `Comet-<Name>/` folder here (or use an existing one) and train it.
 
 ## Layout
