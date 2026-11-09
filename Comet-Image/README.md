@@ -34,7 +34,7 @@
 
 Progress: [after 5 minutes](results/comet_image_v4_flash_5min.png) it already made smooth painterly images, where the pixel-space attempt was still colored static at 10 minutes.
 
-**Download the weights:** latest: [Comet-Image-v4-Flash-Preview-2026-11-09-1604](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-preview-2026-11-09-1604) (30 min of training); first pass: [Comet-Image-v4-Flash-2026-11-08](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-2026-11-08) (15 min). Each is 62 MB fp16 `.safetensors` + config. Generate images:
+**Download the weights:** latest: [Comet-Image-v4-Flash-Preview-2026-11-09-1641](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-preview-2026-11-09-1641) (60 min of training); [2026-11-09-1604](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-preview-2026-11-09-1604) (30 min); first pass: [Comet-Image-v4-Flash-2026-11-08](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-2026-11-08) (15 min). Each is 62 MB fp16 `.safetensors` + config. Generate images:
 
 ```bash
 python generate_flash.py Comet-Image-v4-Flash-2026-11-08.safetensors --out images --n 4 --seed 7          # 8 steps (Flash)
@@ -52,6 +52,26 @@ Loss **0.730 → 0.709** (last-minute averages). Gains are steady but small: sam
 ![v4-Flash-Preview after 30 min, 8 steps](results/comet_image_v4_flash_preview_30min_8steps.png)
 
 *Same 16 seeds as above, after 30 minutes of training in total, 8 steps. [30-step version](results/comet_image_v4_flash_preview_30min_30steps.png). Released as [Comet-Image-v4-Flash-Preview-2026-11-09-1604](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4-flash-preview-2026-11-09-1604).*
+
+### Sharper: 30 more minutes → Comet-Image-v4-Flash-Preview-2026-11-09-1641
+
+Goal: less blurry, more visible shapes. Continued from 2026-11-09-1604 for **30 minutes** (60 min total, 10,457 more steps), lr 2e-4 with cooldown, plus one recipe change: **`--t_shift 0.5`**, which spends more training on nearly-clean images, where fine detail is learned. Same architecture, same data.
+
+Because `t_shift` changes the training loss itself, runs are now compared on a **fixed eval loss** (1,024 latents, fixed noise and times, EMA weights):
+
+| Checkpoint | Training | Eval loss |
+|---|---|---|
+| Comet-Image-v4-Flash-2026-11-08 | 15 min | 0.7182 |
+| Comet-Image-v4-Flash-Preview-2026-11-09-1604 | 30 min | 0.6982 |
+| **Comet-Image-v4-Flash-Preview-2026-11-09-1641** | **60 min** | **0.6787** |
+
+![v4-Flash-Preview after 60 min, 30 steps](results/comet_image_v4_flash_preview_60min_30steps.png)
+
+*Same 16 seeds, 60 minutes of training, **30 steps**.*
+
+- ✅ **At 30 steps it's clearly sharper:** harder edges, more contrast, solid shapes (white figures against black, a doorway, rocky textures, a yellow flower against leaves) instead of soft smears.
+- ⚠️ **At 8 steps (Flash) it's still soft** ([8-step grid](results/comet_image_v4_flash_preview_60min_8steps.png)): the detail lives in the last sampling steps, which 8 big steps skip.
+- ⚠️ **Still not recognizable objects.** 32.6M parameters, 9.5k images and one hour of training make convincing textures and compositions, not clear things.
 
 ## Legacy: Comet-Image-Preview v1, v2 and v3 (discontinued)
 

@@ -31,9 +31,10 @@ PANELS = [
     dict(title="Image training speed", subtitle="Images/sec, 4060 Ti", better="higher",
          fmt=lambda v: f"{v:.0f}", ymax=450,
          rows=[("Pixel DiT\n73.6M", 371 / 8, GRAY), ("v4-Flash\nlatent 32.6M", 371, COMET)]),
-    dict(title="Image generation", subtitle="Training loss", better="lower",
-         fmt=lambda v: f"{v:.3f}", ymax=0.9,
-         rows=[("v4-Flash\n15 min", 0.73, COMET_LIGHT), ("v4-Flash\n30 min", 0.7085, COMET)]),
+    dict(title="Image generation", subtitle="Fixed eval loss", better="lower",
+         fmt=lambda v: f"{v:.3f}", ymax=0.85,
+         rows=[("v4-Flash\n15 min", 0.7182, GRAY), ("v4-Flash\n30 min", 0.6982, COMET_LIGHT),
+               ("v4-Flash\n60 min", 0.6787, COMET)]),
 ]
 
 
@@ -49,10 +50,10 @@ def main(cont_loss=None):
     fig.text(0.010, 0.965, "Frontier Comet", fontsize=28, fontweight="bold", color=COMET, va="top",
              path_effects=[pe.withStroke(linewidth=7, foreground=COMET, alpha=0.15)])
     fig.text(0.010, 0.885, "The whole Comet family on one chart: language, reasoning and image models by Talmeez Ahmad, "
-             "trained in 10–30 minutes on a laptop CPU and an RTX 4060 Ti", fontsize=12.5, color=MUTED, va="top")
+             "trained in 10–60 minutes on a laptop CPU and an RTX 4060 Ti", fontsize=12.5, color=MUTED, va="top")
     fig.text(0.010, 0.02,
              "Each panel is a different task; compare bars within a panel only. One run per setting. Pixel DiT speed "
-             "estimated from the 8× speed-up measured against it. Image loss: training loss, last-minute average.",
+             "estimated from the 8× speed-up measured against it. Image loss: flow-matching loss on 1,024 fixed latents with fixed noise and times (EMA weights).",
              fontsize=8.5, color=MUTED)
     fig.tight_layout(rect=(0, 0.05, 1, 0.82), w_pad=3)
     out = os.path.join(HERE, "frontier_comet.jpg")
