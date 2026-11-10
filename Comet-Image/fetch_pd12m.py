@@ -31,7 +31,7 @@ def main():
     col = next(c for c in df.columns if c.lower() in ("url", "image_url"))
     urls = df[col].tolist()
     random.Random(a.seed).shuffle(urls)
-    urls = urls[: int(a.n * 1.3)]  # some downloads fail
+    # Try the whole shard; downloading stops once --n images are saved (about 25% of URLs fail).
     print(f"{files[a.shard]}: {len(df):,} rows, trying {len(urls):,}", flush=True)
     sess = requests.Session()
     sess.headers["User-Agent"] = "Comet-Image dataset fetcher (research)"
