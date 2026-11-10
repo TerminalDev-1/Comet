@@ -6,7 +6,8 @@
 |---|---|
 | **Comet-Image-v4.1-Flash** | **GA.** Latent DiT, 256×256, 30 steps, 2 h of training, public data only |
 | **Comet-Image-v4.1-Flash-Lite** | **GA.** v4.1-Flash distilled to **8 steps** |
-| **Comet-Image-v4.2-Flash-Preview-2026-11-09-2134** | **Latest preview.** 2032 + 15 min on more varied data (+1,700 PD12M CC0 photos) |
+| **Comet-Image-v4.2-Flash-Preview-2026-11-10-1823** | **Latest preview.** 2134 + 30 min on **51,827 PD12M photos** + the old data (108,905 latents) |
+| Comet-Image-v4.2-Flash-Preview-2026-11-09-2134 | Preview. 2032 + 15 min on more varied data (+1,700 PD12M CC0 photos) |
 | Comet-Image-v4.2-Flash-Preview-2026-11-09-2032 | Preview. v4.1-Flash + 60 min (3 h total), 30 steps |
 | Comet-Image-v4-Flash-Preview-2026-11-09-1641 | Preview checkpoint (60 min), superseded by v4.1 |
 | Comet-Image-v4-Flash-Distill-Preview-2026-11-09-1711 | Preview 8-step distillation of 1641, superseded by v4.1-Flash-Lite |
@@ -17,6 +18,20 @@
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
 *v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4.1-Flash** and **v4.1-Flash-Lite** (GA), efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
+
+## Comet-Image-v4.2-Flash-Preview-2026-11-10-1823: 50,000 new photos
+
+The big data run. Downloaded **50,127 more public-domain/CC0 photos** from [PD12M](https://huggingface.co/datasets/Spawning/PD12M) (`fetch_pd12m.py --shard 1 --n 50000 --workers 128`, ~2,300 images/min, 23 minutes), giving **51,827 PD12M photos** in total, about 5× more distinct images than everything used before. Each photo became one center-crop latent (`encode_latents.py --crops 0`, ~4,000 images/min with the new threaded loader; extra crops are near-duplicates and tripled the encode time), merged with the old 57,078 latents: **108,905** total (`latents256_big.npy`, 850 MB, fits on the GPU next to training).
+
+Trained 2134 on the mix for **30 minutes** (10,397 steps, ~6 passes over the data), same recipe (`--lr 2e-4 --warmup 100 --t_shift 0.5`, 32.6M, checkpoints every 5 min).
+
+- Eval loss on the new mix: **0.7278 → 0.7254 (10 min) → 0.7238 (20 min) → 0.7224**. That's a steady drop, about 1.5× the rate seen on the old data. These numbers use the new mix, so they aren't comparable with the old-data evals (e.g. 2032's 0.6574) or the Frontier Comet chart.
+- Images: same seeds as 2134, clearly more photographic. Blue skies, horizons, mountains behind a coast, and a field under a sky appear where 2134 had abstract shapes. Still rough overall.
+- Copy check: generated images sit a median 49.1 from their nearest training image (minimum 39.2), vs 52.9 between different training images (minimum 16.6). New images, not copies.
+
+![v4.2-Flash-Preview-2134 vs 1823, same seeds](results/comet_image_v42_flash_preview_1823_vs_2134.png)
+
+Weights: [GitHub Release](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.2-flash-preview-2026-11-10-1823).
 
 ## Comet-Image-v4.2-Flash-Preview-2026-11-09-2134: more varied data
 
