@@ -10,6 +10,10 @@
 
 ## Comet-Space-Preview-2026-11-10-2109
 
+![Comet-Space-Preview-2026-11-10-2109, seed 42, 30 steps](results/comet_space_preview_2109_seed42.png)
+
+*Seed 42, 30 steps: a golden Sun with flares at the limb, a layered Mars rock outcrop, cratered gray terrain, a starfield and glowing orange plasma.*
+
 ![Comet-Image-1855 vs Comet-Space-2109, same seeds](results/comet_space_preview_2109_vs_1855.jpg)
 
 *Same seeds, before (general model 1855) and after 30 minutes of space-only training. Sun surfaces (SDO 304 Å red plasma, 171 Å gold with a flare), Mars plains seen from orbit and cratered terrain appear where the general model drew landscapes and abstract shapes.*

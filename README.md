@@ -10,6 +10,18 @@
 
 *Above: Comet-Image-v4.1-Flash (GA), 256×256 images in 30 steps, after 2 hours of training on a home GPU (public data only).*
 
+## Latest checkpoints
+
+Samples from the newest checkpoint of each line, same seed (42) and 30 steps, so each tile starts from the same noise in both grids.
+
+![Comet-Image-v4.2-Flash-Preview-2026-11-10-2038, seed 42](Comet-Image/results/comet_image_v42_flash_preview_2038_seed42.png)
+
+*General model, **Comet-Image-v4.2-Flash-Preview-2026-11-10-2038**: leaves, a field under a blue sky, an old house, a sketch on paper.*
+
+![Comet-Space-Preview-2026-11-10-2109, seed 42](Comet-Space/results/comet_space_preview_2109_seed42.png)
+
+*Space model, **Comet-Space-Preview-2026-11-10-2109**: from the same noise, a golden Sun with flares at the limb, a layered Mars rock outcrop, cratered gray terrain, a starfield and glowing orange plasma.*
+
 ## The family
 
 | Model | Folder | What it is | Best result |

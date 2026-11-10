@@ -23,6 +23,8 @@
 
 ## Comet-Image-v4.2-Flash-Preview-2026-11-10-2038: more photos, more space, and a held-out check
 
+![Comet-Image-v4.2-Flash-Preview-2026-11-10-2038, seed 42, 30 steps](results/comet_image_v42_flash_preview_2038_seed42.png)
+
 Continued 1855 for **30 minutes** on the biggest mix yet: **202,114 latents** = the earlier 108,905 + **49,127 more PD12M photos** (a second metadata shard, `fetch_pd12m.py --shard 2`) + **44,082 space latents** from 22,048 space images (Sun, Mars, NASA; see [Comet-Space](../Comet-Space/)).
 
 New this run: a **held-out check**. `encode_latents.py --holdout 1000` set aside 1,000 of the new photos that are never trained on, and `train_latent.py --eval_data` reports their loss next to the usual eval on training images. If the model were overfitting, the held-out loss would rise while the training one falls.
