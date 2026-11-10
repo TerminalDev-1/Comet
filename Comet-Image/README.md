@@ -21,6 +21,26 @@
 
 *v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4.1-Flash** and **v4.1-Flash-Lite** (GA), efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
 
+## Development status: v4.2-Flash (Preview)
+
+| | |
+|---|---|
+| **Status** | Preview, still training. Latest checkpoint: **Comet-Image-v4.2-Flash-Preview-2026-11-10-2038** |
+| **Training time on v4.2** | **2 h 45 min** on top of v4.1-Flash (60 + 15 + 30 + 30 + 30 min), over 2 days (2026-11-09 to 11-10). Plus a 20-min 64.5M-parameter experiment that was dropped |
+| **Total training since v4 began** | **4 h 45 min** (v4-Flash-Preview 60 min → v4.1-Flash GA 2 h → v4.2 now) on one RTX 4060 Ti |
+| **Checkpoints released** | 5: 2032, 2134, 1823, 1855, 2038 |
+| **Data** | From ~9,500 images (v4.1) to **~128,000 distinct images**: 101,954 PD12M public-domain/CC0 photos, 22,548 space images (NASA, SDO Sun, Mars rovers), 3,347 Microcosmos. 195,217 de-duplicated training latents |
+| **Data work** | Downloading, CLIP filtering, encoding and de-duplication took about as long as training: ~2 h of wall-clock time on 2026-11-10 |
+| **Latest eval** | Held-out photos (never trained on): 0.7691 → **0.7667** in the last run, falling together with the training eval (no overfitting) |
+
+**Why it isn't GA yet:**
+
+1. **Images are still mostly abstract.** Skies, horizons, fields and textures appear, but most samples don't show clear subjects yet. v4.1-Flash went GA as the best version of the old dataset; v4.2 is in the middle of moving to a 13× bigger one.
+2. **It's still improving every run.** Each 30-minute run lowers the held-out loss, so freezing it now would ship a model that is about to get better.
+3. **No fixed benchmark against v4.1-Flash yet.** The eval set changed whenever data was added (and the held-out set only exists since 2038), so we can't yet say by how much v4.2 beats v4.1 on the same images.
+
+**GA when:** recognizable subjects in most samples, a clear win over v4.1-Flash on a fixed held-out set, and gains flattening out. Then it ships as **Comet-Image-v4.2-Flash** with an 8-step **v4.2-Flash-Lite** distilled from it (distillation happens only for GA checkpoints).
+
 ## Comet-Image-v4.2-Flash-Preview-2026-11-10-2038: more photos, more space, and a held-out check
 
 ![Comet-Image-v4.2-Flash-Preview-2026-11-10-2038, seed 42, 30 steps](results/comet_image_v42_flash_preview_2038_seed42.png)

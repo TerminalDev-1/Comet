@@ -8,6 +8,24 @@
 |---|---|
 | **Comet-Space-Preview-2026-11-10-2109** | **First preview.** Comet-Image-v4.2-Flash-Preview-2026-11-10-1855 + 30 min on 22,048 space images |
 
+## Development status: Comet-Space (Preview)
+
+| | |
+|---|---|
+| **Status** | First preview. Latest checkpoint: **Comet-Space-Preview-2026-11-10-2109** |
+| **Training time on Comet-Space** | **30 min** of space-only training (2026-11-10), on top of Comet-Image-v4.2-Flash-Preview-1855 (4 h 15 min of general training before it) |
+| **Checkpoints released** | 1: 2109 |
+| **Data** | 22,548 space images: 15,871 NASA library (CLIP-filtered), 5,986 SDO Sun images, 691 Mars rover photos. 43,905 de-duplicated training latents |
+| **Latest eval** | Held-out space images: 0.6407 → **0.6298** (training images 0.6516 → 0.6395) |
+
+**Why it isn't GA yet:**
+
+1. **Only 30 minutes of training.** It already draws the Sun, Mars terrain and starfields, but it's the first pass.
+2. **The dataset is small for long runs.** 30 minutes was ~15 passes over the data and the held-out gap is just starting to open (by 0.0012). More space images are needed before training much longer.
+3. **Mars is under-represented.** The rover raw-image API rate-limited the download at 691 photos; planets other than Mars, the Moon and deep-sky images need more coverage too.
+
+**GA when:** a bigger space dataset (more Mars, planets, Moon, galaxies), recognizable objects in most samples (a whole Sun disk, a planet, a nebula), and a held-out loss that has stopped improving. Then it ships as **Comet-Space** with a distilled 8-step Lite.
+
 ## Comet-Space-Preview-2026-11-10-2109
 
 ![Comet-Space-Preview-2026-11-10-2109, seed 42, 30 steps](results/comet_space_preview_2109_seed42.png)
