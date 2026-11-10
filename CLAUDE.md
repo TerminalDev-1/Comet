@@ -25,3 +25,4 @@ Shared Python environment: `Comet/.venv` (run e.g. `../.venv/Scripts/python trai
 - **Private data stays private:** screenshot-based data, its crops, weights trained on it and copy-check images never get pushed. Only code, text write-ups and generated sample grids that Talmeez approved get published.
 - When a new model is added, add it to the family table in `README.md`.
 - **Every release shows samples of the latest checkpoints:** put a sample grid of each newly released checkpoint in its model README and in the release notes, and update the "Latest checkpoints" section near the top of the hub `README.md` (one grid per line, same seed across lines, e.g. seed 42, 30 steps). Generated grids only; never private data.
+- **Preview lines keep a "Development status" table** at the top of their model README (status, total training time, checkpoints, data, latest eval, why not GA yet, what GA needs). Update it with every preview release.
