@@ -26,4 +26,4 @@ Comet-Image has plateaued: 3 hours of training on the same ~9.5k images (NASA sp
 
 ## Status
 
-- [ ] Not started (queued 2026-11-09).
+- [x] **Done 2026-11-10.** Fetched 50,127 new PD12M photos (51,827 total, `--shard 1`, ~2,300/min), encoded 1 view each (108,905 latents with the old data), trained 2134 for 2 × 30 min: released `Comet-Image-v4.2-Flash-Preview-2026-11-10-1823` (eval 0.7224) and `-1855` (eval 0.7212).

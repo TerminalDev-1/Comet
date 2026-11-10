@@ -6,7 +6,8 @@
 |---|---|
 | **Comet-Image-v4.1-Flash** | **GA.** Latent DiT, 256×256, 30 steps, 2 h of training, public data only |
 | **Comet-Image-v4.1-Flash-Lite** | **GA.** v4.1-Flash distilled to **8 steps** |
-| **Comet-Image-v4.2-Flash-Preview-2026-11-10-1823** | **Latest preview.** 2134 + 30 min on **51,827 PD12M photos** + the old data (108,905 latents) |
+| **Comet-Image-v4.2-Flash-Preview-2026-11-10-1855** | **Latest preview.** 1823 + 30 min more on the same data (60 min on the big mix) |
+| Comet-Image-v4.2-Flash-Preview-2026-11-10-1823 | Preview. 2134 + 30 min on **51,827 PD12M photos** + the old data (108,905 latents) |
 | Comet-Image-v4.2-Flash-Preview-2026-11-09-2134 | Preview. 2032 + 15 min on more varied data (+1,700 PD12M CC0 photos) |
 | Comet-Image-v4.2-Flash-Preview-2026-11-09-2032 | Preview. v4.1-Flash + 60 min (3 h total), 30 steps |
 | Comet-Image-v4-Flash-Preview-2026-11-09-1641 | Preview checkpoint (60 min), superseded by v4.1 |
@@ -18,6 +19,20 @@
 | Comet-Image-Preview-2026-11-08 (v1) | 🗄️ **Legacy, discontinued** (2026-11-08) |
 
 *v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4.1-Flash** and **v4.1-Flash-Lite** (GA), efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
+
+## Comet-Image-v4.2-Flash-Preview-2026-11-10-1855: 60 minutes on the big mix
+
+Continued 1823 for **30 more minutes** on the same 108,905 latents (same recipe), for 60 minutes in total on the big PD12M mix.
+
+- Eval loss on the new mix: 0.7224 → 0.7231 (10 min, the usual bump when the learning rate restarts at full) → 0.7223 (20 min) → **0.7212**. Over the full 60 minutes: **0.7278 → 0.7212**.
+- Images: very close to 1823, a little cleaner (e.g. the coastline's sky and treeline). Most of the visual gain came from the new data in the first 30 minutes; the second 30 minutes mostly polished it.
+- Copy check: median distance to the nearest training image 48.7 (minimum 40.5) vs 52.9 between different training images. New images, not copies.
+
+![v4.2-Flash-Preview 2134 vs 1823 vs 1855, same seeds](results/comet_image_v42_flash_preview_2134_1823_1855.jpg)
+
+Weights: [GitHub Release](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.2-flash-preview-2026-11-10-1855).
+
+**Next:** progress per 30 minutes is shrinking again, so the next step is more new photos (another PD12M shard) rather than more time on these. An 8-step Lite can be distilled from 1855.
 
 ## Comet-Image-v4.2-Flash-Preview-2026-11-10-1823: 50,000 new photos
 
