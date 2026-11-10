@@ -83,11 +83,14 @@ def main():
     p.add_argument("--size", default="medium", choices=["small", "medium", "large"])
     p.add_argument("--workers", type=int, default=8)
     p.add_argument("--more", action="store_true", help="search MORE_QUERIES instead of the original list")
+    p.add_argument("--queries", default=None, help="comma-separated searches to run instead (credits_<tag>.jsonl)")
+    p.add_argument("--tag", default="custom", help="name for this --queries batch's credits file")
     a = p.parse_args()
     os.makedirs(os.path.join(a.out, "images"), exist_ok=True)
     seen, jobs, credits = set(), [], []
     rejected = os.path.join(a.out, "rejected")  # filter_space.py moves non-space images here; don't fetch them again
-    for q in (MORE_QUERIES if a.more else QUERIES):
+    queries = a.queries.split(",") if a.queries else (MORE_QUERIES if a.more else QUERIES)
+    for q in queries:
         n_new = 0
         for it in search(q, a.per_query):
             d = (it.get("data") or [{}])[0]
@@ -106,7 +109,7 @@ def main():
             credits.append({"nasa_id": nid, "title": d.get("title"), "center": d.get("center"),
                             "query": q, "url": url})
         print(f"{q!r}: +{n_new} (total {len(jobs)})", flush=True)
-    with open(os.path.join(a.out, "credits_more.jsonl" if a.more else "credits.jsonl"), "w", encoding="utf-8") as f:
+    with open(os.path.join(a.out, f"credits_{a.tag}.jsonl" if a.queries else ("credits_more.jsonl" if a.more else "credits.jsonl")), "w", encoding="utf-8") as f:
         for c in credits:
             f.write(json.dumps(c) + "\n")
     print(f"downloading {len(jobs)} images...", flush=True)

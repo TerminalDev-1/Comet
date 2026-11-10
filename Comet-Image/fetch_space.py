@@ -80,7 +80,7 @@ def pages_parallel(fetch, pages, workers=16):
 def mars2020_jobs(n, rng):
     api = "https://mars.nasa.gov/rss/api/"
     base = {"feed": "raw_images", "category": "mars2020", "feedtype": "json", "num": 100, "order": "sol desc",
-            "search": "|MCZ_LEFT|MCZ_RIGHT", "extended": "sample_type::full,"}
+            "extended": "sample_type::full,"}  # no camera filter: it makes the API ~90 s per page; filter by name below
     total = requests.get(api, params={**base, "num": 1, "page": 0}, headers=UA, timeout=30).json()["total_results"]
     pages = list(range(total // 100))
     rng.shuffle(pages)
