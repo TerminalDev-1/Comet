@@ -46,4 +46,6 @@ python generate_flash.py Comet-Space-Preview-2026-11-10-2109.safetensors --out i
 
 **Credits:** NASA (NASA Image and Video Library), NASA/SDO and the AIA and HMI science teams via [Helioviewer.org](https://helioviewer.org), NASA/JPL-Caltech/ASU (Perseverance), NASA/JPL-Caltech/MSSS (Curiosity). Released under the [Comet license](../LICENSE.md).
 
-**Next:** more space data (the Mars raw-image API rate-limited this first download), de-duplicate repeated NASA images, then train further.
+**De-duplicated afterwards** with `dedup_latents.py`: 173 duplicate latents (NASA images listed under two IDs) and 4 training latents that matched held-out images (under 1% of the 500, so the held-out numbers above barely change). Future runs use `space_latents_dedup.npy` (43,905 latents).
+
+**Next:** more space data (the Mars raw-image API rate-limited this first download), then train further.

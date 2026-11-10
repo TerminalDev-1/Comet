@@ -34,7 +34,7 @@ New this run: a **held-out check**. `encode_latents.py --holdout 1000` set aside
 
 Both fall together; the held-out loss even dropped slightly more (−0.0024 vs −0.0022). No overfitting: what the model learns carries over to photos it has never seen. The held-out loss is higher because those photos are entirely new, while the training eval includes data seen in earlier runs.
 
-Images: close to 1855, with some space influence (e.g. white spacecraft-like shapes on black). Copy check: median distance to the nearest training image 47.8 vs 51.6 between training images. (The training set contains some exact duplicates, e.g. NASA images listed twice; to be de-duplicated.)
+Images: close to 1855, with some space influence (e.g. white spacecraft-like shapes on black). Copy check: median distance to the nearest training image 47.8 vs 51.6 between training images. **De-duplicated afterwards** with `dedup_latents.py` (pairs closer than 5 in latent space, vs ~50 between different images): 6,751 duplicates, mostly the older NASA images encoded twice, plus 150 that duplicated Comet-Space's held-out set. The 1,000-photo PD12M held-out set had no duplicates in training, so this run's held-out result stands. Future runs use `latents256_big2_dedup.npy` (195,217 latents).
 
 ![v4.2-Flash-Preview 1855 vs 2038, same seeds](results/comet_image_v42_flash_preview_1855_vs_2038.jpg)
 
