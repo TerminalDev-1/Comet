@@ -69,6 +69,14 @@ def sun_jobs(n, rng):
         yield name, (HV, params), {"source": "NASA/SDO via Helioviewer.org", "layer": layer, **params}
 
 
+def pages_parallel(fetch, pages, workers=16):
+    """Fetch API listing pages 16 at a time (one at a time was the bottleneck), yielding each page's items."""
+    with ThreadPoolExecutor(workers) as ex:
+        for c in range(0, len(pages), workers * 2):
+            for items in ex.map(fetch, pages[c:c + workers * 2]):
+                yield items
+
+
 def mars2020_jobs(n, rng):
     api = "https://mars.nasa.gov/rss/api/"
     base = {"feed": "raw_images", "category": "mars2020", "feedtype": "json", "num": 100, "order": "sol desc",
@@ -76,11 +84,13 @@ def mars2020_jobs(n, rng):
     total = requests.get(api, params={**base, "num": 1, "page": 0}, headers=UA, timeout=30).json()["total_results"]
     pages = list(range(total // 100))
     rng.shuffle(pages)
-    for pg in pages:
+    def fetch(pg):
         try:
-            items = requests.get(api, params={**base, "page": pg}, headers=UA, timeout=30).json()["images"]
+            return requests.get(api, params={**base, "page": pg}, headers=UA, timeout=30).json()["images"]
         except Exception:
-            continue
+            return []
+
+    for items in pages_parallel(fetch, pages):
         items = [it for it in items if it["image_files"].get("full_res", "").rsplit("/", 1)[-1][:3] == "ZL0"]
         rng.shuffle(items)
         for it in items[:PER_PAGE]:  # left camera, filter 0 = RGB color; few per page so sequences don't repeat
@@ -98,13 +108,16 @@ def msl_jobs(n, rng):
         pages = list(range(total // 100))
         rng.shuffle(pages)
         quota = int(n * 2.5 * share)
-        for pg in pages:
+
+        def fetch(pg, base=base):
+            try:
+                return requests.get(api, params={**base, "page": pg}, headers=UA, timeout=30).json()["items"]
+            except Exception:
+                return []
+
+        for items in pages_parallel(fetch, pages):
             if quota <= 0:
                 break
-            try:
-                items = requests.get(api, params={**base, "page": pg}, headers=UA, timeout=30).json()["items"]
-            except Exception:
-                continue
             items = [it for it in items if (it.get("https_url") or "").endswith((".jpg", ".JPG", ".png"))]
             rng.shuffle(items)
             for it in items[:PER_PAGE]:  # few per page: neighbours are often focus stacks of the same rock
