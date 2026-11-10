@@ -1,6 +1,7 @@
 """Encode images into Stable Diffusion VAE latents (for latent-diffusion training, e.g. Comet-Image-v4-Flash).
 
     python encode_latents.py --src <dir> [<dir> ...] --out <latents.npy> [--size 256 --crops 5 --min_frac 0.6]
+                             [--holdout 1000 --holdout_out <heldout.npy>]
 
 Each image gives one centered view plus `--crops` random square crops (from --min_frac of the short side up
 to all of it), resized to size x size, then encoded by the VAE (stabilityai/sd-vae-ft-mse, downloaded on
@@ -49,39 +50,58 @@ def main():
     p.add_argument("--min_frac", type=float, default=0.6)
     p.add_argument("--batch", type=int, default=32)
     p.add_argument("--workers", type=int, default=8, help="threads that load and crop images")
+    p.add_argument("--holdout", type=int, default=0,
+                   help="set aside this many random images (center view only) in --holdout_out; they are not in --out")
+    p.add_argument("--holdout_out", default=None)
     a = p.parse_args()
     dev = "cuda"
     vae = AutoencoderKL.from_pretrained(VAE_ID, torch_dtype=torch.float16).to(dev).eval()
     print(f"VAE loaded: {VAE_ID}, {sum(x.numel() for x in vae.parameters()) / 1e6:.0f}M params", flush=True)
     exts = (".png", ".jpg", ".jpeg", ".webp")
     files = sorted(f for d in a.src for f in glob.glob(os.path.join(d, "**", "*"), recursive=True)
-                   if f.lower().endswith(exts))
-    print(f"{len(files)} images -> up to {len(files) * (a.crops + 1):,} latents at {a.size // 8}x{a.size // 8}", flush=True)
-    lat, buf = [], []
+                   if f.lower().endswith(exts) and os.sep + "rejected" + os.sep not in f)
+    held = []
+    if a.holdout:
+        assert a.holdout_out, "--holdout needs --holdout_out"
+        pick = set(np.random.default_rng(12345).choice(len(files), a.holdout, replace=False).tolist())
+        held = [f for i, f in enumerate(files) if i in pick]
+        files = [f for i, f in enumerate(files) if i not in pick]
+    print(f"{len(files)} images -> up to {len(files) * (a.crops + 1):,} latents at {a.size // 8}x{a.size // 8}"
+          + (f", {len(held)} held out" if held else ""), flush=True)
 
-    def flush():
-        x = torch.from_numpy(np.stack([np.asarray(v) for v in buf])).to(dev).permute(0, 3, 1, 2).half() / 127.5 - 1
-        with torch.no_grad():
-            z = vae.encode(x).latent_dist.mean * SCALE
-        lat.append(z.cpu().numpy().astype(np.float16))
-        buf.clear()
+    def encode(files, crops, tag):
+        lat, buf = [], []
 
-    # Images are loaded and cropped by a thread pool (one seeded RNG per image), in chunks so memory stays small.
-    load = lambda i: views(files[i], a.size, a.crops, a.min_frac, np.random.default_rng(i))
-    chunk = 1000
-    with ThreadPoolExecutor(a.workers) as ex:
-        for c in range(0, len(files), chunk):
-            for vs in ex.map(load, range(c, min(c + chunk, len(files)))):
-                buf += vs
-                while len(buf) >= a.batch:
-                    rest = buf[a.batch:]
-                    del buf[a.batch:]
-                    flush()
-                    buf += rest
-            print(f"  {min(c + chunk, len(files))}/{len(files)} images, {sum(len(l) for l in lat):,} latents", flush=True)
-    if buf:
-        flush()
-    arr = np.concatenate(lat)
+        def flush():
+            x = torch.from_numpy(np.stack([np.asarray(v) for v in buf])).to(dev).permute(0, 3, 1, 2).half() / 127.5 - 1
+            with torch.no_grad():
+                z = vae.encode(x).latent_dist.mean * SCALE
+            lat.append(z.cpu().numpy().astype(np.float16))
+            buf.clear()
+
+        # Images are loaded and cropped by a thread pool (one seeded RNG per image), in chunks so memory stays small.
+        load = lambda i: views(files[i], a.size, crops, a.min_frac, np.random.default_rng(i))
+        chunk = 1000
+        with ThreadPoolExecutor(a.workers) as ex:
+            for c in range(0, len(files), chunk):
+                for vs in ex.map(load, range(c, min(c + chunk, len(files)))):
+                    buf += vs
+                    while len(buf) >= a.batch:
+                        rest = buf[a.batch:]
+                        del buf[a.batch:]
+                        flush()
+                        buf += rest
+                print(f"  {tag} {min(c + chunk, len(files))}/{len(files)} images, {sum(len(l) for l in lat):,} latents",
+                      flush=True)
+        if buf:
+            flush()
+        return np.concatenate(lat)
+
+    if held:
+        h = encode(held, 0, "holdout")
+        np.save(a.holdout_out, h)
+        print(f"HOLDOUT: {a.holdout_out} {h.shape}", flush=True)
+    arr = encode(files, a.crops, "train")
     np.save(a.out, arr)
     print(f"DONE: {a.out} {arr.shape}, {arr.nbytes / 2**20:.0f} MB, latent std {arr.astype(np.float32).std():.3f}")
 

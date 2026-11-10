@@ -60,6 +60,8 @@ def main():
     p.add_argument("--flash_steps", type=int, default=30)
     p.add_argument("--ckpt_every", type=float, default=5)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--eval_data", default=None,
+                   help="held-out latents (never trained on, from encode_latents.py --holdout): also report their loss")
     p.add_argument("--init", default=None, help="ema.pt of an earlier run to continue from")
     p.add_argument("--t_shift", type=float, default=0.0, help=">0 trains more on nearly-clean images (fine detail)")
     p.add_argument("--grow_layers", type=int, default=0,
@@ -113,16 +115,27 @@ def main():
     e_noise = torch.randn(1024, C, S, S, generator=eg, device=dev)
     e_t = torch.sigmoid(torch.randn(1024, generator=eg, device=dev))
 
+    held = torch.from_numpy(np.load(a.eval_data)).to(dev)[:1024] if a.eval_data else None
+
     @torch.no_grad()
-    def eval_loss():
+    def loss_on(src, n):
         tot = 0.0
-        for i in range(0, 1024, 256):
-            x1, x0, t = data[e_idx[i:i + 256]].float(), e_noise[i:i + 256], e_t[i:i + 256]
+        for i in range(0, n, 256):
+            j = min(i + 256, n)
+            x1, x0, t = src(i, j).float(), e_noise[i:j], e_t[i:j]
             xt = (1 - t)[:, None, None, None] * x0 + t[:, None, None, None] * x1
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 v = ema(xt, t).float()
-            tot += torch.nn.functional.mse_loss(v, x1 - x0).item() * 256
-        return round(tot / 1024, 4)
+            tot += torch.nn.functional.mse_loss(v, x1 - x0).item() * (j - i)
+        return round(tot / n, 4)
+
+    def eval_loss():
+        """Loss on 1,024 fixed training latents; with --eval_data, a dict that adds the held-out loss
+        (same noise and times). A held-out loss that rises while the training one falls means overfitting."""
+        tr = loss_on(lambda i, j: data[e_idx[i:j]], 1024)
+        if held is None:
+            return tr
+        return {"train": tr, "heldout": loss_on(lambda i, j: held[i:j], len(held))}
 
     print(json.dumps({"min": 0.0, "eval_loss": eval_loss()}), flush=True)
 
