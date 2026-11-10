@@ -26,6 +26,20 @@
 
 **GA when:** a bigger space dataset (more Mars, planets, Moon, galaxies), recognizable objects in most samples (a whole Sun disk, a planet, a nebula), and a held-out loss that has stopped improving. Then it ships as **Comet-Space** with a distilled 8-step Lite.
 
+### Total time spent (development log)
+
+Space-specific work on 2026-11-10, from run logs and commit times. The data work ran alongside the general model's (see [Comet-Image](../Comet-Image/README.md#total-time-spent-development-log)).
+
+| Phase | Time | What happened |
+|---|---|---|
+| GPU training | **30 min** | Comet-Space-Preview-2109, from Comet-Image-1855 |
+| Writing data tools, testing APIs | 14 min | `fetch_space.py` (Helioviewer Sun, Perseverance, Curiosity), extra NASA searches |
+| Data download | 32 min | 5,986 Sun images, 13,422 NASA images (incl. ~2,500 Mars), 704 rover photos |
+| Debugging | ~10 min | Rover API took 40–90 s per page, then rate-limited us (403); switched Mars to the NASA image library |
+| Filtering, encoding, de-duplication | ~20 min | CLIP space filter, 22k images × 2 views, 177 duplicates removed |
+| Evaluation and release | ~15 min | Copy check, sample grids, export, GitHub release, README |
+| **Total** | **~2 h** | about 25% of it GPU training |
+
 ## Comet-Space-Preview-2026-11-10-2109
 
 ![Comet-Space-Preview-2026-11-10-2109, seed 42, 30 steps](results/comet_space_preview_2109_seed42.png)

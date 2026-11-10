@@ -41,6 +41,25 @@
 
 **GA when:** recognizable subjects in most samples, a clear win over v4.1-Flash on a fixed held-out set, and gains flattening out. Then it ships as **Comet-Image-v4.2-Flash** with an 8-step **v4.2-Flash-Lite** distilled from it (distillation happens only for GA checkpoints).
 
+### Total time spent (development log)
+
+All the work behind the checkpoints, not just GPU training. 2026-11-10 is rebuilt from run logs and commit times (17:05–22:10, about **5 h** of wall-clock time, shared with Comet-Space). Some phases overlapped (downloads ran while code was being fixed), so the rows add up to slightly more than the wall-clock time.
+
+| Phase (2026-11-10) | Time | What happened |
+|---|---|---|
+| GPU training | **2 h 00 min** | 1823, 1855, 2038 (3 × 30 min) + Comet-Space 2109 (30 min) |
+| Data download | 56 min | 50k PD12M photos (24 min), then 50k more PD12M + Sun, Mars and NASA space images in parallel (32 min) |
+| Encoding to latents | 41 min | 51.8k + 49.1k photos (1 view each) and 22k space images (2 views each); includes a slow first attempt |
+| Filtering and de-duplication | 14 min | CLIP space filter (6 min), duplicate removal (8 min) |
+| Writing data tools, testing APIs | 20 min | `fetch_pd12m.py --shard`, `fetch_space.py`, `fetch_nasa.py --more/--queries`, held-out split |
+| Debugging | ~15 min | VAE encoder starved by single-threaded image loading (fixed with a thread pool), stale script on the PC, Mars raw-image API too slow then rate-limited (403), launch-script quoting |
+| Evaluation and release | ~55 min | Copy checks, sample grids, weight export, 4 GitHub releases, READMEs |
+
+| Day | GPU training | Other work |
+|---|---|---|
+| 2026-11-09 (2032, 2134, dropped 64.5M test) | 1 h 35 min | not tracked |
+| 2026-11-10 (1823, 1855, 2038, Comet-Space 2109) | 2 h 00 min | ~3 h (table above) |
+
 ## Comet-Image-v4.2-Flash-Preview-2026-11-10-2038: more photos, more space, and a held-out check
 
 ![Comet-Image-v4.2-Flash-Preview-2026-11-10-2038, seed 42, 30 steps](results/comet_image_v42_flash_preview_2038_seed42.png)
