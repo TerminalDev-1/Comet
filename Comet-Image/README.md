@@ -6,7 +6,8 @@
 |---|---|
 | **Comet-Image-v4.1-Flash** | **GA.** Latent DiT, 256×256, 30 steps, 2 h of training, public data only |
 | **Comet-Image-v4.1-Flash-Lite** | **GA.** v4.1-Flash distilled to **8 steps** |
-| **Comet-Image-v4.2-Flash-Preview-2026-11-10-1855** | **Latest preview.** 1823 + 30 min more on the same data (60 min on the big mix) |
+| **Comet-Image-v4.2-Flash-Preview-2026-11-10-2038** | **Latest preview.** 1855 + 30 min on 202,114 latents: + another 49,127 PD12M photos + 22,048 space images |
+| Comet-Image-v4.2-Flash-Preview-2026-11-10-1855 | Preview. 1823 + 30 min more on the same data (60 min on the big mix) |
 | Comet-Image-v4.2-Flash-Preview-2026-11-10-1823 | Preview. 2134 + 30 min on **51,827 PD12M photos** + the old data (108,905 latents) |
 | Comet-Image-v4.2-Flash-Preview-2026-11-09-2134 | Preview. 2032 + 15 min on more varied data (+1,700 PD12M CC0 photos) |
 | Comet-Image-v4.2-Flash-Preview-2026-11-09-2032 | Preview. v4.1-Flash + 60 min (3 h total), 30 steps |
@@ -20,6 +21,25 @@
 
 *v1, v2 and v3 were trained only on Talmeez's screenshots and are discontinued. Their write-ups stay below as a record. Current: **Comet-Image-v4.1-Flash** and **v4.1-Flash-Lite** (GA), efficient, fast-training and fast-generating model trained only on public images. "Preview" means the first training pass is released, then the model keeps training until it's right.*
 
+## Comet-Image-v4.2-Flash-Preview-2026-11-10-2038: more photos, more space, and a held-out check
+
+Continued 1855 for **30 minutes** on the biggest mix yet: **202,114 latents** = the earlier 108,905 + **49,127 more PD12M photos** (a second metadata shard, `fetch_pd12m.py --shard 2`) + **44,082 space latents** from 22,048 space images (Sun, Mars, NASA; see [Comet-Space](../Comet-Space/)).
+
+New this run: a **held-out check**. `encode_latents.py --holdout 1000` set aside 1,000 of the new photos that are never trained on, and `train_latent.py --eval_data` reports their loss next to the usual eval on training images. If the model were overfitting, the held-out loss would rise while the training one falls.
+
+| | Start | 10 min | 20 min | 30 min |
+|---|---|---|---|---|
+| Eval on training images | 0.7249 | 0.7246 | 0.7237 | **0.7227** |
+| Eval on **held-out** photos | 0.7691 | 0.7686 | 0.7678 | **0.7667** |
+
+Both fall together; the held-out loss even dropped slightly more (−0.0024 vs −0.0022). No overfitting: what the model learns carries over to photos it has never seen. The held-out loss is higher because those photos are entirely new, while the training eval includes data seen in earlier runs.
+
+Images: close to 1855, with some space influence (e.g. white spacecraft-like shapes on black). Copy check: median distance to the nearest training image 47.8 vs 51.6 between training images. (The training set contains some exact duplicates, e.g. NASA images listed twice; to be de-duplicated.)
+
+![v4.2-Flash-Preview 1855 vs 2038, same seeds](results/comet_image_v42_flash_preview_1855_vs_2038.jpg)
+
+Weights: [GitHub Release](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.2-flash-preview-2026-11-10-2038).
+
 ## Comet-Image-v4.2-Flash-Preview-2026-11-10-1855: 60 minutes on the big mix
 
 Continued 1823 for **30 more minutes** on the same 108,905 latents (same recipe), for 60 minutes in total on the big PD12M mix.
@@ -32,7 +52,7 @@ Continued 1823 for **30 more minutes** on the same 108,905 latents (same recipe)
 
 Weights: [GitHub Release](https://github.com/TerminalDev-1/Comet/releases/tag/comet-image-v4.2-flash-preview-2026-11-10-1855).
 
-**Next:** progress per 30 minutes is shrinking again, so the next step is more new photos (another PD12M shard) rather than more time on these. An 8-step Lite can be distilled from 1855.
+**Next:** progress per 30 minutes is shrinking again, so the next step is more new photos (another PD12M shard) rather than more time on these.
 
 ## Comet-Image-v4.2-Flash-Preview-2026-11-10-1823: 50,000 new photos
 
